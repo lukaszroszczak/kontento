@@ -34,3 +34,6 @@ yarn-error.log*
 
 # OS
 Thumbs.db
+
+# Subdirectories
+Social-Media-Post-Generator/
