@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kontento — AI Content Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0d;
+  --surface: #111116;
+  --surface2: #18181f;
+  --surface3: #1e1e28;
+  --border: rgba(255,255,255,0.07);
+  --border-mid: rgba(255,255,255,0.11);
+  --border-active: rgba(255,255,255,0.2);
+  --text: #ededf5;
+  --text-muted: #7a7990;
+  --text-dim: #3e3d52;
+  --accent: #c8f060;
+  --accent-dim: rgba(200,240,96,0.1);
+  --accent-glow: rgba(200,240,96,0.2);
+  --purple: #a78bfa;
+  --purple-dim: rgba(167,139,250,0.1);
+  --coral: #fb7185;
+  --coral-dim: rgba(251,113,133,0.1);
+  --blue: #60a5fa;
+  --blue-dim: rgba(96,165,250,0.1);
+  --nav-h: 64px;
+  --sidebar-w: 220px;
+}
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 300; min-height: 100vh; overflow-x: hidden; }
+body::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse 70% 50% at 90% 0%, rgba(167,139,250,0.05) 0%, transparent 60%), radial-gradient(ellipse 50% 60% at 0% 100%, rgba(200,240,96,0.03) 0%, transparent 60%); pointer-events:none; z-index:0; }
+
+/* ── NAV ── */
+nav {
+  position: fixed; top:0; left:0; right:0; z-index:200;
+  height: var(--nav-h);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  background: rgba(10,10,13,0.9);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.logo { font-family:'Syne',sans-serif; font-weight:800; font-size:1.25rem; letter-spacing:-0.03em; }
+.logo span { color: var(--accent); }
+.nav-center { display:flex; gap:4px; background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:4px; }
+.nav-tab { padding:7px 18px; border-radius:9px; font-size:0.8rem; font-weight:400; cursor:pointer; color:var(--text-muted); transition:all 0.2s; border:none; background:none; font-family:'DM Sans',sans-serif; white-space:nowrap; }
+.nav-tab.active { background:var(--surface3); color:var(--text); border:1px solid var(--border-mid); }
+.nav-right { display:flex; align-items:center; gap:12px; }
+.new-post-btn { display:flex; align-items:center; gap:7px; padding:8px 18px; background:var(--accent); color:#0a0a0d; border:none; border-radius:100px; font-family:'DM Sans',sans-serif; font-size:0.8rem; font-weight:500; cursor:pointer; transition:all 0.2s; }
+.new-post-btn:hover { background:#d4f56a; transform:translateY(-1px); }
+.avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg, var(--purple), var(--accent)); display:grid; place-items:center; font-size:0.72rem; font-weight:500; cursor:pointer; flex-shrink:0; }
+
+/* ── APP SHELL ── */
+.app { display:flex; padding-top: var(--nav-h); min-height:100vh; position:relative; z-index:1; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar-w); flex-shrink:0;
+  border-right: 1px solid var(--border);
+  padding: 28px 14px;
+  position: sticky; top: var(--nav-h);
+  height: calc(100vh - var(--nav-h));
+  overflow-y: auto;
+  display: flex; flex-direction:column; gap:2px;
+}
+.sidebar-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.14em; color:var(--text-dim); margin: 16px 8px 8px; }
+.sidebar-label:first-child { margin-top:0; }
+.step-item { display:flex; align-items:center; gap:11px; padding:10px 10px; border-radius:10px; cursor:pointer; transition:all 0.18s; position:relative; }
+.step-item:hover { background:var(--surface2); }
+.step-item.active { background:var(--accent-dim); }
+.step-item.done { opacity:0.65; }
+.step-item.done:hover { opacity:1; }
+.step-item.locked { opacity:0.3; pointer-events:none; }
+.step-num { width:26px; height:26px; border-radius:50%; border:1px solid var(--border); background:var(--surface); display:grid; place-items:center; font-size:0.7rem; flex-shrink:0; transition:all 0.2s; }
+.step-item.active .step-num { background:var(--accent); border-color:var(--accent); color:#0a0a0d; font-weight:700; }
+.step-item.done .step-num { background:rgba(200,240,96,0.15); border-color:rgba(200,240,96,0.3); color:var(--accent); }
+.step-name { font-size:0.82rem; font-weight:400; }
+.step-check { margin-left:auto; font-size:0.7rem; color:var(--accent); }
+.sidebar-divider { height:1px; background:var(--border); margin:12px 0; }
+
+/* ── MAIN ── */
+.main { flex:1; min-width:0; padding: 40px 48px; max-width:1100px; width:100%; margin:0 auto; }
+@media(max-width:1200px){ .main { padding:32px 32px; } }
+@media(max-width:900px){ .main { padding:24px 20px; } .sidebar { display:none; } }
+
+/* ── PAGE VIEWS ── */
+.page { display:none; }
+.page.active { display:block; animation: fadeUp 0.3s ease both; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── STEP PANELS ── */
+.step-panel { display:none; }
+.step-panel.active { display:block; animation: fadeUp 0.3s ease both; }
+
+/* ── SHARED COMPONENTS ── */
+.step-badge { display:inline-flex; align-items:center; gap:6px; background:var(--accent-dim); border:1px solid rgba(200,240,96,0.18); border-radius:100px; padding:4px 12px; font-size:0.7rem; font-weight:500; color:var(--accent); margin-bottom:14px; letter-spacing:0.04em; }
+h1 { font-family:'Syne',sans-serif; font-size:clamp(1.6rem,3vw,2.2rem); font-weight:700; letter-spacing:-0.03em; line-height:1.15; margin-bottom:10px; }
+h2 { font-family:'Syne',sans-serif; font-size:1.4rem; font-weight:700; letter-spacing:-0.02em; }
+.step-desc { font-size:0.9rem; color:var(--text-muted); max-width:520px; line-height:1.6; margin-bottom:32px; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:24px; }
+.field-label { font-size:0.7rem; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px; }
+textarea, input[type=text], input[type=date], input[type=time] { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:0.88rem; font-weight:300; padding:11px 14px; resize:none; outline:none; transition:border-color 0.2s; line-height:1.6; }
+textarea:focus, input:focus { border-color:var(--border-active); }
+textarea::placeholder, input::placeholder { color:var(--text-dim); }
+.field-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px; }
+.chip { display:flex; align-items:center; gap:7px; padding:7px 14px; border-radius:100px; border:1px solid var(--border); background:var(--surface2); font-size:0.78rem; cursor:pointer; transition:all 0.18s; user-select:none; }
+.chip.selected { border-color:var(--accent); background:var(--accent-dim); color:var(--accent); }
+.chip-group { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.btn-primary { display:inline-flex; align-items:center; gap:8px; padding:11px 24px; background:var(--accent); color:#0a0a0d; border:none; border-radius:100px; font-family:'DM Sans',sans-serif; font-size:0.85rem; font-weight:500; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+.btn-primary:hover { background:#d4f56a; transform:translateY(-1px); }
+.btn-secondary { display:inline-flex; align-items:center; gap:8px; padding:11px 20px; background:none; color:var(--text-muted); border:1px solid var(--border); border-radius:100px; font-family:'DM Sans',sans-serif; font-size:0.85rem; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+.btn-secondary:hover { border-color:var(--border-active); color:var(--text); }
+.btn-ghost { background:none; border:none; color:var(--text-dim); font-size:0.8rem; cursor:pointer; padding:8px 10px; border-radius:8px; font-family:'DM Sans',sans-serif; transition:color 0.15s; }
+.btn-ghost:hover { color:var(--text-muted); }
+.action-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding-top:24px; border-top:1px solid var(--border); margin-top:28px; }
+
+/* ── PLATFORM COLORS ── */
+.plat-ig { color:#e1306c; }
+.plat-li { color:#0a66c2; }
+.plat-fb { color:#1877f2; }
+.plat-dot-ig { background:#e1306c; }
+.plat-dot-li { background:#0a66c2; }
+.plat-dot-fb { background:#1877f2; }
+
+/* ── STATUS BADGES ── */
+.status { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:100px; font-size:0.7rem; font-weight:500; }
+.status-draft { background:var(--surface3); color:var(--text-muted); border:1px solid var(--border); }
+.status-scheduled { background:var(--blue-dim); color:var(--blue); border:1px solid rgba(96,165,250,0.2); }
+.status-published { background:var(--accent-dim); color:var(--accent); border:1px solid rgba(200,240,96,0.2); }
+.status-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+/* ── POST LIST HEADER ── */
+.list-header { display:flex; align-items:center; gap:12px; margin-bottom:24px; flex-wrap:wrap; }
+.list-header h2 { flex:1; min-width:140px; }
+.filter-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.filter-select { background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text-muted); font-family:'DM Sans',sans-serif; font-size:0.78rem; padding:7px 12px; cursor:pointer; outline:none; }
+.filter-select:focus { border-color:var(--border-active); }
+.search-box { position:relative; }
+.search-box input { padding-left:32px; width:180px; font-size:0.8rem; }
+.search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-dim); font-size:0.85rem; pointer-events:none; }
+.sort-btn { display:flex; align-items:center; gap:5px; padding:7px 12px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; font-size:0.78rem; color:var(--text-muted); cursor:pointer; white-space:nowrap; font-family:'DM Sans',sans-serif; transition:all 0.15s; }
+.sort-btn:hover { border-color:var(--border-active); color:var(--text); }
+
+/* ── POST LIST ── */
+.posts-grid { display:flex; flex-direction:column; gap:10px; }
+.post-row {
+  display:flex; align-items:center; gap:16px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:14px; padding:14px 18px;
+  cursor:pointer; transition:all 0.2s;
+  position:relative;
+}
+.post-row:hover { border-color:var(--border-mid); background:var(--surface2); }
+.post-row.dragging { opacity:0.4; border-style:dashed; }
+.post-thumb {
+  width:52px; height:52px; border-radius:10px; flex-shrink:0;
+  display:grid; place-items:center; font-size:1.4rem;
+  background:var(--surface2);
+}
+.post-body { flex:1; min-width:0; }
+.post-title { font-size:0.88rem; font-weight:500; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.post-preview { font-size:0.75rem; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.post-meta-row { display:flex; align-items:center; gap:10px; margin-top:5px; }
+.post-platforms { display:flex; gap:5px; }
+.post-plat-icon { width:18px; height:18px; border-radius:4px; display:grid; place-items:center; font-size:10px; }
+.post-date { font-size:0.72rem; color:var(--text-dim); }
+.post-stats-mini { display:flex; gap:12px; margin-left:auto; }
+.stat-mini { display:flex; align-items:center; gap:4px; font-size:0.75rem; color:var(--text-muted); }
+.stat-mini strong { color:var(--text); font-weight:500; }
+.post-actions { display:flex; gap:6px; opacity:0; transition:opacity 0.2s; }
+.post-row:hover .post-actions { opacity:1; }
+.icon-btn { width:30px; height:30px; border-radius:8px; display:grid; place-items:center; background:var(--surface3); border:1px solid var(--border); cursor:pointer; font-size:13px; transition:all 0.15s; }
+.icon-btn:hover { border-color:var(--border-active); }
+.drag-handle { color:var(--text-dim); cursor:grab; padding:4px; font-size:1rem; }
+.drag-handle:active { cursor:grabbing; }
+
+/* ── CALENDAR ── */
+.cal-container { display:grid; grid-template-columns:1fr 320px; gap:24px; align-items:start; }
+@media(max-width:900px){ .cal-container { grid-template-columns:1fr; } }
+.cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.cal-nav { display:flex; align-items:center; gap:12px; }
+.cal-nav button { width:32px; height:32px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text-muted); cursor:pointer; font-size:1rem; display:grid; place-items:center; transition:all 0.15s; }
+.cal-nav button:hover { border-color:var(--border-active); color:var(--text); }
+.cal-title { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:700; }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.cal-day-label { text-align:center; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-dim); padding:8px 0; }
+.cal-cell {
+  min-height:80px; border-radius:10px; border:1px solid var(--border);
+  background:var(--surface); padding:8px;
+  transition:all 0.18s; position:relative;
+  cursor:pointer;
+}
+.cal-cell:hover { border-color:var(--border-mid); background:var(--surface2); }
+.cal-cell.today { border-color:rgba(200,240,96,0.3); background:var(--accent-dim); }
+.cal-cell.other-month { opacity:0.35; }
+.cal-cell.drag-over { border-color:var(--accent); background:var(--accent-dim); transform:scale(1.02); }
+.cell-date { font-size:0.75rem; font-weight:500; margin-bottom:6px; color:var(--text-muted); }
+.cal-cell.today .cell-date { color:var(--accent); font-weight:700; }
+.cell-posts { display:flex; flex-direction:column; gap:3px; }
+.cell-post-chip {
+  display:flex; align-items:center; gap:4px;
+  padding:3px 6px; border-radius:6px;
+  font-size:0.65rem; line-height:1.2;
+  background:var(--surface3); border:1px solid var(--border);
+  overflow:hidden; cursor:pointer;
+  transition:all 0.15s;
+}
+.cell-post-chip:hover { border-color:var(--border-mid); }
+.cell-post-chip.scheduled { background:var(--blue-dim); border-color:rgba(96,165,250,0.2); color:var(--blue); }
+.cell-post-chip.published { background:var(--accent-dim); border-color:rgba(200,240,96,0.2); color:var(--accent); }
+.chip-time { font-weight:500; flex-shrink:0; }
+.chip-title { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-muted); }
+.cell-post-chip.scheduled .chip-title, .cell-post-chip.published .chip-title { color:inherit; }
+
+/* Calendar sidebar - unscheduled posts */
+.cal-sidebar-title { font-family:'Syne',sans-serif; font-size:0.95rem; font-weight:700; margin-bottom:14px; }
+.cal-sidebar-desc { font-size:0.78rem; color:var(--text-muted); margin-bottom:16px; line-height:1.5; }
+.draggable-posts { display:flex; flex-direction:column; gap:8px; }
+.draggable-post {
+  display:flex; align-items:center; gap:10px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; padding:10px 12px;
+  cursor:grab; transition:all 0.18s;
+}
+.draggable-post:hover { border-color:var(--border-mid); background:var(--surface2); }
+.draggable-post:active { cursor:grabbing; }
+.dp-thumb { width:36px; height:36px; border-radius:8px; background:var(--surface2); display:grid; place-items:center; font-size:1rem; flex-shrink:0; }
+.dp-info { flex:1; min-width:0; }
+.dp-title { font-size:0.78rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dp-sub { font-size:0.68rem; color:var(--text-muted); margin-top:1px; }
+.dp-drag { color:var(--text-dim); font-size:1rem; }
+
+/* ── TIME PICKER MODAL ── */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:500; display:grid; place-items:center; backdrop-filter:blur(8px); animation:fadeIn 0.2s ease; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.modal { background:var(--surface); border:1px solid var(--border-mid); border-radius:20px; padding:32px; width:360px; max-width:90vw; animation:scaleIn 0.25s ease; }
+@keyframes scaleIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+.modal h3 { font-family:'Syne',sans-serif; font-size:1.2rem; font-weight:700; margin-bottom:6px; }
+.modal-sub { font-size:0.82rem; color:var(--text-muted); margin-bottom:24px; }
+.time-options { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:20px; }
+.time-opt { padding:10px 14px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; font-size:0.8rem; cursor:pointer; transition:all 0.15s; text-align:center; }
+.time-opt:hover { border-color:var(--border-active); }
+.time-opt.selected { background:var(--accent-dim); border-color:rgba(200,240,96,0.3); color:var(--accent); }
+.time-opt .t-label { font-weight:500; }
+.time-opt .t-sub { font-size:0.68rem; color:var(--text-muted); margin-top:2px; }
+.time-opt.selected .t-sub { color:var(--accent); opacity:0.7; }
+.modal-custom { display:flex; align-items:center; gap:10px; margin-bottom:20px; }
+.modal-custom label { font-size:0.78rem; color:var(--text-muted); white-space:nowrap; }
+.modal-custom input { flex:1; }
+.modal-actions { display:flex; gap:10px; }
+.modal-actions .btn-primary { flex:1; justify-content:center; }
+
+/* ── STATS PAGE ── */
+.stats-hero { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:32px; }
+@media(max-width:800px){ .stats-hero { grid-template-columns:1fr 1fr; } }
+@media(max-width:480px){ .stats-hero { grid-template-columns:1fr; } }
+.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; }
+.stat-label { font-size:0.7rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-muted); margin-bottom:8px; }
+.stat-val { font-family:'Syne',sans-serif; font-size:1.9rem; font-weight:700; letter-spacing:-0.03em; }
+.stat-change { display:flex; align-items:center; gap:4px; font-size:0.75rem; margin-top:6px; }
+.stat-change.up { color:var(--accent); }
+.stat-change.down { color:var(--coral); }
+.stat-bar { height:3px; background:var(--surface3); border-radius:10px; margin-top:12px; overflow:hidden; }
+.stat-bar-fill { height:100%; border-radius:10px; background:var(--accent); }
+.platform-breakdown { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:32px; }
+@media(max-width:700px){ .platform-breakdown { grid-template-columns:1fr; } }
+.plat-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; }
+.plat-header { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+.plat-logo { width:36px; height:36px; border-radius:10px; display:grid; place-items:center; font-size:1.1rem; }
+.plat-logo.ig { background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045); }
+.plat-logo.li { background:#0a66c2; }
+.plat-logo.fb { background:#1877f2; }
+.plat-name { font-family:'Syne',sans-serif; font-size:0.95rem; font-weight:700; }
+.plat-handle { font-size:0.72rem; color:var(--text-muted); }
+.plat-stats { display:flex; flex-direction:column; gap:10px; }
+.plat-stat-row { display:flex; align-items:center; justify-content:space-between; }
+.psr-label { font-size:0.75rem; color:var(--text-muted); }
+.psr-val { font-size:0.9rem; font-weight:500; }
+.psr-bar { width:100%; height:4px; background:var(--surface3); border-radius:10px; margin-top:3px; overflow:hidden; }
+.psr-fill { height:100%; border-radius:10px; }
+.top-posts-section { margin-top:8px; }
+.top-posts-section h3 { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; margin-bottom:14px; }
+.top-post-row { display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:8px; }
+.tp-rank { font-family:'Syne',sans-serif; font-size:1.2rem; font-weight:800; color:var(--text-dim); width:24px; flex-shrink:0; }
+.tp-thumb { width:44px; height:44px; border-radius:8px; background:var(--surface2); display:grid; place-items:center; font-size:1.2rem; flex-shrink:0; }
+.tp-body { flex:1; min-width:0; }
+.tp-title { font-size:0.85rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tp-date { font-size:0.72rem; color:var(--text-muted); margin-top:2px; }
+.tp-metrics { display:flex; gap:16px; flex-shrink:0; }
+.tp-metric { text-align:center; }
+.tp-m-val { font-size:0.88rem; font-weight:500; }
+.tp-m-label { font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:10px; }
+
+/* ── CREATOR FLOW (full page overlay) ── */
+.creator-overlay {
+  position:fixed; inset:0; z-index:300;
+  background:var(--bg);
+  display:none;
+  flex-direction:column;
+  overflow:hidden;
+}
+.creator-overlay.open { display:flex; }
+.creator-nav {
+  height:var(--nav-h); display:flex; align-items:center; justify-content:space-between;
+  padding:0 24px; border-bottom:1px solid var(--border);
+  flex-shrink:0; background:var(--surface);
+}
+.creator-steps-track { display:flex; align-items:center; gap:0; flex:1; max-width:600px; margin:0 auto; }
+.cst { display:flex; align-items:center; gap:8px; font-size:0.75rem; color:var(--text-dim); cursor:pointer; padding:0 12px; position:relative; }
+.cst.active { color:var(--text); }
+.cst.done { color:var(--text-muted); cursor:pointer; }
+.cst-num { width:22px; height:22px; border-radius:50%; border:1px solid var(--text-dim); display:grid; place-items:center; font-size:0.65rem; flex-shrink:0; transition:all 0.2s; }
+.cst.active .cst-num { background:var(--accent); border-color:var(--accent); color:#0a0a0d; font-weight:700; }
+.cst.done .cst-num { background:rgba(200,240,96,0.15); border-color:rgba(200,240,96,0.3); color:var(--accent); }
+.cst-arrow { color:var(--text-dim); font-size:0.7rem; margin:0 -6px; }
+.creator-body { flex:1; overflow-y:auto; display:flex; }
+.creator-sidebar {
+  width:220px; flex-shrink:0;
+  border-right:1px solid var(--border);
+  padding:28px 14px; overflow-y:auto;
+  display:flex; flex-direction:column; gap:2px;
+}
+@media(max-width:768px){ .creator-sidebar { display:none; } }
+.creator-main { flex:1; padding:40px 48px; max-width:900px; margin:0 auto; width:100%; }
+@media(max-width:900px){ .creator-main { padding:24px 20px; } }
+.close-creator { display:flex; align-items:center; gap:6px; background:none; border:1px solid var(--border); border-radius:8px; padding:6px 12px; color:var(--text-muted); font-size:0.78rem; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.15s; }
+.close-creator:hover { border-color:var(--border-active); color:var(--text); }
+
+/* ── TOPIC GRID ── */
+.topics-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }
+@media(max-width:700px){ .topics-grid { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:480px){ .topics-grid { grid-template-columns:1fr; } }
+.topic-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden; }
+.topic-card:hover { border-color:var(--border-mid); }
+.topic-card.selected { border-color:var(--accent); background:var(--accent-dim); }
+.topic-emoji { font-size:1.4rem; margin-bottom:9px; }
+.topic-title { font-size:0.82rem; font-weight:500; margin-bottom:5px; line-height:1.3; }
+.topic-hint { font-size:0.7rem; color:var(--text-muted); line-height:1.4; }
+.topic-check { position:absolute; top:12px; right:12px; width:20px; height:20px; border-radius:50%; background:var(--accent); color:#0a0a0d; font-size:10px; display:grid; place-items:center; font-weight:700; opacity:0; transition:opacity 0.2s; }
+.topic-card.selected .topic-check { opacity:1; }
+
+/* post editor */
+.post-editor { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; margin-bottom:16px; }
+.editor-toolbar { display:flex; align-items:center; gap:3px; padding:12px 14px; border-bottom:1px solid var(--border); background:var(--surface2); flex-wrap:wrap; }
+.tb { padding:5px 9px; border-radius:7px; background:none; border:none; color:var(--text-muted); font-size:0.78rem; cursor:pointer; transition:all 0.15s; font-family:'DM Sans',sans-serif; }
+.tb:hover { background:var(--surface); color:var(--text); }
+.tb-sep { width:1px; height:18px; background:var(--border); margin:0 3px; }
+.tb-ai { margin-left:auto; display:flex; align-items:center; gap:5px; padding:5px 11px; border-radius:100px; background:var(--purple-dim); border:1px solid rgba(167,139,250,0.2); color:var(--purple); font-size:0.72rem; cursor:pointer; transition:all 0.18s; font-family:'DM Sans',sans-serif; }
+.tb-ai:hover { background:rgba(167,139,250,0.18); }
+.post-textarea { width:100%; min-height:160px; background:none; border:none; padding:18px; font-size:0.88rem; line-height:1.7; color:var(--text); font-family:'DM Sans',sans-serif; font-weight:300; outline:none; resize:none; }
+.post-foot { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-top:1px solid var(--border); background:var(--surface2); }
+.char-c { font-size:0.72rem; color:var(--text-muted); }
+.char-c span { color:var(--accent); }
+
+/* image step */
+.img-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+@media(max-width:600px){ .img-grid { grid-template-columns:1fr; } }
+.img-panel { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; }
+.panel-head { display:flex; align-items:center; gap:8px; margin-bottom:14px; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); }
+.pbadge { padding:2px 8px; border-radius:100px; background:var(--purple-dim); color:var(--purple); font-size:0.62rem; }
+.pbadge.manual { background:var(--coral-dim); color:var(--coral); }
+.gen-btn { display:flex; align-items:center; justify-content:center; gap:7px; padding:10px; background:var(--purple-dim); border:1px solid rgba(167,139,250,0.2); border-radius:10px; color:var(--purple); font-size:0.8rem; cursor:pointer; transition:all 0.18s; font-family:'DM Sans',sans-serif; margin-top:10px; width:100%; }
+.gen-btn:hover { background:rgba(167,139,250,0.18); }
+.img-preview { aspect-ratio:1; background:var(--surface2); border-radius:10px; display:grid; place-items:center; color:var(--text-dim); font-size:0.78rem; margin-top:12px; text-align:center; overflow:hidden; }
+.upload-zone { aspect-ratio:1; border:1.5px dashed var(--border); border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; cursor:pointer; transition:all 0.18s; text-align:center; margin-top:12px; }
+.upload-zone:hover { border-color:var(--border-active); background:var(--surface2); }
+.upload-zone .upload-icon { font-size:1.8rem; opacity:0.3; }
+.upload-hint { font-size:0.75rem; color:var(--text-muted); }
+.upload-fmt { font-size:0.65rem; color:var(--text-dim); }
+
+/* Research tasks */
+.research-task { display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--surface2); border-radius:10px; font-size:0.83rem; animation:slideIn 0.4s ease both; }
+@keyframes slideIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.task-spinner { width:18px; height:18px; border-radius:50%; border:2px solid var(--border); border-top-color:var(--accent); animation:spin 0.8s linear infinite; flex-shrink:0; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.task-done { width:18px; height:18px; border-radius:50%; background:var(--accent); color:#0a0a0d; font-size:10px; font-weight:700; display:grid; place-items:center; flex-shrink:0; }
+.result-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px; }
+@media(max-width:600px){ .result-grid { grid-template-columns:1fr; } }
+.result-card { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:16px; }
+.result-tag { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-dim); margin-bottom:6px; }
+.result-title { font-size:0.82rem; font-weight:500; margin-bottom:5px; line-height:1.4; }
+.result-text { font-size:0.75rem; color:var(--text-muted); line-height:1.5; }
+
+/* publish preview */
+.pub-layout { display:grid; grid-template-columns:1fr 300px; gap:32px; }
+@media(max-width:800px){ .pub-layout { grid-template-columns:1fr; } }
+.phone-wrap { display:flex; justify-content:center; }
+.phone-mock { width:220px; background:#1a1a1e; border-radius:30px; padding:14px; border:1px solid rgba(255,255,255,0.08); box-shadow:0 30px 60px rgba(0,0,0,0.5); }
+.phone-screen { background:#fff; border-radius:20px; overflow:hidden; color:#000; }
+.ig-header { display:flex; align-items:center; gap:8px; padding:10px; border-bottom:1px solid rgba(0,0,0,0.06); }
+.ig-av { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045); flex-shrink:0; }
+.ig-n { font-size:0.7rem; font-weight:700; }
+.ig-s { font-size:0.6rem; color:#888; }
+.ig-img { width:100%; aspect-ratio:1; background:linear-gradient(135deg,#1a1a2e,#16213e); display:grid; place-items:center; font-size:2.5rem; }
+.ig-cap { padding:8px 10px; font-size:0.65rem; line-height:1.5; color:#333; }
+.ig-foot { display:flex; gap:10px; padding:7px 10px; border-top:1px solid rgba(0,0,0,0.06); font-size:0.6rem; color:#888; }
+.pub-opts { display:flex; flex-direction:column; gap:14px; }
+.pub-opts h3 { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:700; }
+.sched-toggle { display:flex; gap:6px; }
+.tgl { flex:1; padding:9px; border-radius:9px; border:1px solid var(--border); background:none; color:var(--text-muted); font-size:0.78rem; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.18s; }
+.tgl.active { background:var(--accent-dim); border-color:rgba(200,240,96,0.3); color:var(--accent); }
+.best-t { display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--surface2); border-radius:9px; font-size:0.75rem; color:var(--text-muted); }
+.best-t strong { color:var(--accent); }
+.hashtag-list { display:flex; flex-wrap:wrap; gap:5px; }
+.htag { padding:4px 9px; background:var(--surface2); border:1px solid var(--border); border-radius:100px; font-size:0.7rem; color:var(--purple); cursor:pointer; }
+.htag:hover { border-color:var(--purple); }
+.htag.add { color:var(--text-dim); border-style:dashed; }
+</style>
+</head>
+<body>
+
+<!-- GLOBAL NAV -->
+<nav>
+  <div class="logo">konte<span>n</span>to</div>
+  <div class="nav-center">
+    <button class="nav-tab active" onclick="showPage('posts')">Posty</button>
+    <button class="nav-tab" onclick="showPage('calendar')">Kalendarz</button>
+    <button class="nav-tab" onclick="showPage('stats')">Statystyki</button>
+  </div>
+  <div class="nav-right">
+    <button class="new-post-btn" onclick="openCreator()">＋ Nowy post</button>
+    <div class="avatar">MK</div>
+  </div>
+</nav>
+
+<div class="app">
+  <!-- SIDEBAR (pages) -->
+  <aside class="sidebar" id="app-sidebar">
+    <div class="sidebar-label">Nawigacja</div>
+    <div class="step-item active" onclick="showPage('posts')">
+      <div class="step-num">📄</div>
+      <div class="step-name">Lista postów</div>
+    </div>
+    <div class="step-item" onclick="showPage('calendar')">
+      <div class="step-num">📅</div>
+      <div class="step-name">Kalendarz</div>
+    </div>
+    <div class="step-item" onclick="showPage('stats')">
+      <div class="step-num">📊</div>
+      <div class="step-name">Statystyki</div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">Posty robocze (3)</div>
+    <div class="step-item" onclick="openCreator()">
+      <div class="step-num" style="border-style:dashed">＋</div>
+      <div class="step-name">Nowy post</div>
+    </div>
+    <div class="step-item done" onclick="openCreatorWithPost(0)">
+      <div class="step-num">📸</div>
+      <div class="step-name" style="font-size:0.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px">Kulisy sesji rodzinnej</div>
+    </div>
+    <div class="step-item done" onclick="openCreatorWithPost(1)">
+      <div class="step-num">🌅</div>
+      <div class="step-name" style="font-size:0.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px">Złota godzina</div>
+    </div>
+    <div class="step-item done" onclick="openCreatorWithPost(2)">
+      <div class="step-num">🎁</div>
+      <div class="step-name" style="font-size:0.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px">5 rzeczy o sesjach...</div>
+    </div>
+  </aside>
+
+  <!-- ══════════════════ PAGE: POSTY ══════════════════ -->
+  <main class="main">
+    <div class="page active" id="page-posts">
+      <div class="list-header">
+        <h2>Wszystkie posty</h2>
+        <div class="filter-bar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Szukaj..." style="width:160px" oninput="filterPosts(this.value)">
+          </div>
+          <select class="filter-select" onchange="filterByStatus(this.value)">
+            <option value="">Wszystkie statusy</option>
+            <option value="draft">Szkice</option>
+            <option value="scheduled">Zaplanowane</option>
+            <option value="published">Opublikowane</option>
+          </select>
+          <select class="filter-select" onchange="filterByPlatform(this.value)">
+            <option value="">Wszystkie platformy</option>
+            <option value="ig">Instagram</option>
+            <option value="li">LinkedIn</option>
+            <option value="fb">Facebook</option>
+          </select>
+          <button class="sort-btn" onclick="toggleSort()">↕ Data <span id="sort-indicator">↓</span></button>
+        </div>
+      </div>
+
+      <div class="posts-grid" id="posts-grid">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <!-- ══════════════════ PAGE: KALENDARZ ══════════════════ -->
+    <div class="page" id="page-calendar">
+      <div class="cal-header">
+        <h2>Kalendarz publikacji</h2>
+        <div class="cal-nav">
+          <button onclick="changeMonth(-1)">‹</button>
+          <span class="cal-title" id="cal-title">Marzec 2026</span>
+          <button onclick="changeMonth(1)">›</button>
+        </div>
+      </div>
+
+      <div class="cal-container">
+        <div>
+          <div class="cal-grid" id="cal-grid">
+            <!-- populated by JS -->
+          </div>
+        </div>
+
+        <div>
+          <div class="cal-sidebar-title">Niezaplanowane posty</div>
+          <div class="cal-sidebar-desc">Przeciągnij post na wybrany dzień w kalendarzu, aby go zaplanować.</div>
+          <div class="draggable-posts" id="draggable-posts">
+            <!-- populated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ PAGE: STATYSTYKI ══════════════════ -->
+    <div class="page" id="page-stats">
+      <div class="list-header" style="margin-bottom:28px">
+        <h2>Statystyki</h2>
+        <div class="filter-bar">
+          <select class="filter-select">
+            <option>Ostatnie 30 dni</option>
+            <option>Ostatnie 7 dni</option>
+            <option>Ostatni kwartał</option>
+          </select>
+          <select class="filter-select">
+            <option>Wszystkie platformy</option>
+            <option>Instagram</option>
+            <option>LinkedIn</option>
+            <option>Facebook</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="stats-hero">
+        <div class="stat-card">
+          <div class="stat-label">Łączne wyświetlenia</div>
+          <div class="stat-val">48 290</div>
+          <div class="stat-change up">↑ 14% vs poprzedni miesiąc</div>
+          <div class="stat-bar"><div class="stat-bar-fill" style="width:72%"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Zasięg</div>
+          <div class="stat-val">31 740</div>
+          <div class="stat-change up">↑ 9%</div>
+          <div class="stat-bar"><div class="stat-bar-fill" style="width:58%;background:var(--purple)"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Polubienia</div>
+          <div class="stat-val">2 847</div>
+          <div class="stat-change up">↑ 22%</div>
+          <div class="stat-bar"><div class="stat-bar-fill" style="width:45%;background:var(--coral)"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Wskaźnik zaangażowania</div>
+          <div class="stat-val">5.9%</div>
+          <div class="stat-change down">↓ 2% vs poprzedni miesiąc</div>
+          <div class="stat-bar"><div class="stat-bar-fill" style="width:35%;background:var(--blue)"></div></div>
+        </div>
+      </div>
+
+      <div class="platform-breakdown">
+        <div class="plat-card">
+          <div class="plat-header">
+            <div class="plat-logo ig">📷</div>
+            <div>
+              <div class="plat-name">Instagram</div>
+              <div class="plat-handle">@twoja_marka</div>
+            </div>
+          </div>
+          <div class="plat-stats">
+            <div>
+              <div class="plat-stat-row"><span class="psr-label">Wyświetlenia</span><span class="psr-val">28 410</span></div>
+              <div class="psr-bar"><div class="psr-fill" style="width:80%;background:var(--accent)"></div></div>
+            </div>
+            <div>
+              <div class="plat-stat-row"><span class="psr-label">Zasięg</span><span class="psr-val">19 200</span></div>
+              <div class="psr-bar"><div class="psr-fill" style="width:65%;background:var(--purple)"></div></div>
+            </div>
+            <div>
+              <div class="plat-stat-row"><span class="psr-label">Polubienia</span><span class="psr-val">1 840</span></div>
+              <div class="psr-bar"><div class="psr-fill" style="width:55%;background:var(--coral)"></div></div>
+            </div>
+            <div>
+              <div class="plat-stat-row"><span class="psr-label">Komentarze</span><span class="psr-val">213</span></div>
+              <div class="psr-bar"><div class="psr-fill" style="width:30%;background:var(--blue)"></div></div>
+            </div>
+            <div>
+              <div class="plat-stat-row"><span class="psr-label">Obserwujący</span><span class="psr-val">3 218 (+48)</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="plat-card">
+          <div class="plat-header">
+            <div class="plat-logo li">💼</div>
+            <div>
+              <div class="plat-name">LinkedIn</div>
+              <div class="plat-handle">Marta Kowalska · Studio</div>
+            </div>
+          </div>
+          <div class="plat-stats">
+            <div>
+              <div class="plat-stat-row"><span class="psr-label">Wyświetlenia</span><span class="psr-val">14 780</span></div>
+              <div class="psr-bar"><div class="psr-fill" style="width:55%;background:var(--accent)"></div></div>
+            </div>
+            <div>
+              <div class="plat-stat-row"><span class="psr-label">Zasięg</span><span class="psr-val">9 840</span></div>
+              <div class="psr-bar"><div class="psr-fill" style="width:40%;background:var(--purple)"></div></div>
+            </div>
+            <div>
+              <div class="plat-stat-row"><span class="psr-label">Reakcje</span><span class="psr-val">742</span></div>
+              <div class="psr-bar"><div class="psr-fill" style="width:35%;background:var(--coral)"></div></div>
+            </div>
+            <div>
+              <div class="plat-stat-row"><span class="psr-label">Komentarze</span><span class="psr-val">89</span></div>
+              <div class="psr-bar"><div class="psr-fill" style="width:20%;background:var(--blue)"></div></div>
+            </div>
+            <div>
+              <div class="plat-stat-row"><span class="psr-label">Połączenia</span><span class="psr-val">1 540 (+22)</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="plat-card">
+          <div class="plat-header">
+            <div class="plat-logo fb">👍</div>
+            <div>
+              <div class="plat-name">Facebook</div>
+              <div class="plat-handle">Marka Studio Foto</div>
+            </div>
+          </div>
+          <div class="plat-stats">
+            <div>
+              <div class="plat-stat-row"><span class="psr-label">Wyświetlenia</span><span class="psr-val">5 100</span></div>
+              <div class="psr-bar"><div class="psr-fill" style="width:30%;background:var(--accent)"></div></div>
+            </div>
+            <div>
+              <div class="plat-stat-row"><span class="psr-label">Zasięg</span><span class="psr-val">2 700</span></div>
+              <div class="psr-bar"><div class="psr-fill" style="width:22%;background:var(--purple)"></div></div>
+            </div>
+            <div>
+              <div class="plat-stat-row"><span class="psr-label">Polubienia</span><span class="psr-val">265</span></div>
+              <div class="psr-bar"><div class="psr-fill" style="width:18%;background:var(--coral)"></div></div>
+            </div>
+            <div>
+              <div class="plat-stat-row"><span class="psr-label">Udostępnienia</span><span class="psr-val">44</span></div>
+              <div class="psr-bar"><div class="psr-fill" style="width:12%;background:var(--blue)"></div></div>
+            </div>
+            <div>
+              <div class="plat-stat-row"><span class="psr-label">Polubień strony</span><span class="psr-val">892 (+7)</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="top-posts-section">
+        <h3>Najlepsze posty miesiąca</h3>
+        <div id="top-posts-list"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ══════════════════ CREATOR OVERLAY ══════════════════ -->
+<div class="creator-overlay" id="creator-overlay">
+  <div class="creator-nav">
+    <button class="close-creator" onclick="closeCreator()">✕ Zamknij</button>
+    <div class="creator-steps-track">
+      <div class="cst done" onclick="setCreatorStep(1)"><div class="cst-num">1</div> Profil</div>
+      <div class="cst-arrow">›</div>
+      <div class="cst done" onclick="setCreatorStep(2)"><div class="cst-num">2</div> Research</div>
+      <div class="cst-arrow">›</div>
+      <div class="cst active" onclick="setCreatorStep(3)"><div class="cst-num">3</div> Temat</div>
+      <div class="cst-arrow">›</div>
+      <div class="cst" onclick="setCreatorStep(4)"><div class="cst-num">4</div> Treść</div>
+      <div class="cst-arrow">›</div>
+      <div class="cst" onclick="setCreatorStep(5)"><div class="cst-num">5</div> Grafika</div>
+      <div class="cst-arrow">›</div>
+      <div class="cst" onclick="setCreatorStep(6)"><div class="cst-num">6</div> Publikacja</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span style="font-size:0.75rem;color:var(--text-dim)">Post #<span id="post-counter">4</span></span>
+      <button class="btn-secondary" style="font-size:0.78rem;padding:7px 14px" onclick="saveAsDraft()">💾 Zapisz szkic</button>
+    </div>
+  </div>
+
+  <div class="creator-body">
+    <aside class="creator-sidebar">
+      <div class="sidebar-label">Kroki tworzenia</div>
+      <div class="step-item done" onclick="setCreatorStep(1)"><div class="step-num">1</div><div class="step-name">Profil marki</div><div class="step-check">✓</div></div>
+      <div class="step-item done" onclick="setCreatorStep(2)"><div class="step-num">2</div><div class="step-name">Research AI</div><div class="step-check">✓</div></div>
+      <div class="step-item active" id="cs-3" onclick="setCreatorStep(3)"><div class="step-num">3</div><div class="step-name">Temat</div></div>
+      <div class="step-item locked" id="cs-4" onclick="setCreatorStep(4)"><div class="step-num">4</div><div class="step-name">Treść posta</div></div>
+      <div class="step-item locked" id="cs-5" onclick="setCreatorStep(5)"><div class="step-num">5</div><div class="step-name">Grafika</div></div>
+      <div class="step-item locked" id="cs-6" onclick="setCreatorStep(6)"><div class="step-num">6</div><div class="step-name">Publikacja</div></div>
+    </aside>
+
+    <div class="creator-main">
+      <!-- STEP 1: PROFIL -->
+      <div class="step-panel" id="cp-1">
+        <div class="step-badge">✦ Krok 1</div>
+        <h1>Opis marki</h1>
+        <p class="step-desc">Opisz swoją działalność — AI użyje tego do dopasowania tematów i tonu.</p>
+        <div class="card">
+          <div class="field-label">Opis działalności</div>
+          <textarea rows="4" placeholder="np. Prowadzę studio fotograficzne specjalizujące się w sesjach rodzinnych...">Studio fotograficzne specjalizujące się w sesjach rodzinnych i biznesowych. Misją jest utrwalanie autentycznych chwil w naturalny sposób.</textarea>
+          <div class="field-row">
+            <div><div class="field-label" style="margin-top:16px">Branża</div><input type="text" value="Fotografia, Usługi kreatywne"></div>
+            <div><div class="field-label" style="margin-top:16px">Grupa docelowa</div><input type="text" value="Rodziny, Przedsiębiorcy 25–45 lat"></div>
+          </div>
+          <div class="field-label" style="margin-top:20px">Platformy</div>
+          <div class="chip-group">
+            <div class="chip selected">📷 Instagram</div>
+            <div class="chip selected">💼 LinkedIn</div>
+            <div class="chip">👍 Facebook</div>
+          </div>
+        </div>
+        <div class="action-bar">
+          <button class="btn-primary" onclick="setCreatorStep(2)">Dalej: Research →</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: RESEARCH -->
+      <div class="step-panel" id="cp-2">
+        <div class="step-badge">⚡ Krok 2</div>
+        <h1>Research AI</h1>
+        <p class="step-desc">Analizujemy trendy, best practices i optymalne godziny dla twojej branży.</p>
+        <div class="card">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="research-task" style="animation-delay:0s"><div class="task-done">✓</div><div><div>Analiza profilu branży</div><div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">Fotografia · Polska · 2026</div></div></div>
+            <div class="research-task" style="animation-delay:0.1s"><div class="task-done">✓</div><div><div>Trendy contentowe na IG i LinkedIn</div><div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">12 formatów ze wzrostem zasięgu</div></div></div>
+            <div class="research-task" style="animation-delay:0.2s"><div class="task-done">✓</div><div><div>Optymalne godziny publikacji</div><div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">Wt–Czw, 19:00–21:00 (IG), 8:00–10:00 (LI)</div></div></div>
+            <div class="research-task" style="animation-delay:0.3s"><div class="task-spinner"></div><div><div>Generowanie propozycji tematów…</div></div></div>
+          </div>
+          <div class="result-grid">
+            <div class="result-card"><div class="result-tag">📈 Trend</div><div class="result-title">Behind the scenes +40% zasięgu</div><div class="result-text">Kulisy pracy fotografa generują o 40% wyższe zaangażowanie w Q1 2026.</div></div>
+            <div class="result-card"><div class="result-tag">⏱ Timing</div><div class="result-title">Środy 19:30–20:30 (IG)</div><div class="result-text">Twoja grupa docelowa jest najbardziej aktywna wieczorami w środku tygodnia.</div></div>
+            <div class="result-card"><div class="result-tag">💬 Ton</div><div class="result-title">Storytelling 2× wyższy zapis</div><div class="result-text">Posty z mini-narracją mają 2× wyższy wskaźnik zapis do obserwowania.</div></div>
+            <div class="result-card"><div class="result-tag">🏷 Hashtagi</div><div class="result-title">Nisze &gt; popularne</div><div class="result-text">#fotografiarodzinna #fotografwroclaw — mniejsza konkurencja, wyższy zasięg.</div></div>
+          </div>
+        </div>
+        <div class="action-bar">
+          <button class="btn-secondary" onclick="setCreatorStep(1)">← Wróć</button>
+          <button class="btn-primary" onclick="setCreatorStep(3)">Dalej: Wybierz temat →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: TEMAT -->
+      <div class="step-panel active" id="cp-3">
+        <div class="step-badge">🎯 Krok 3</div>
+        <h1>Wybierz temat</h1>
+        <p class="step-desc">AI zaproponowało tematy dopasowane do twojej marki i trendów. Wybierz jeden lub wpisz własny.</p>
+        <div class="topics-grid">
+          <div class="topic-card selected" onclick="selectTopic(this)"><div class="topic-check">✓</div><div class="topic-emoji">📸</div><div class="topic-title">Kulisy sesji rodzinnej</div><div class="topic-hint">Pokaż swój proces, buduj zaufanie</div></div>
+          <div class="topic-card" onclick="selectTopic(this)"><div class="topic-check">✓</div><div class="topic-emoji">🌅</div><div class="topic-title">Złota godzina — dlaczego warto?</div><div class="topic-hint">Edukacja o jakości światła</div></div>
+          <div class="topic-card" onclick="selectTopic(this)"><div class="topic-check">✓</div><div class="topic-emoji">💬</div><div class="topic-title">Historia klienta</div><div class="topic-hint">Social proof w formie mini-relacji</div></div>
+          <div class="topic-card" onclick="selectTopic(this)"><div class="topic-check">✓</div><div class="topic-emoji">🎁</div><div class="topic-title">5 rzeczy o sesjach plenerowych</div><div class="topic-hint">Format listowy, wysoki potencjał</div></div>
+          <div class="topic-card" onclick="selectTopic(this)"><div class="topic-check">✓</div><div class="topic-emoji">📅</div><div class="topic-title">Rezerwuj sesję wielkanocną</div><div class="topic-hint">Sezonowe CTA, idealny timing</div></div>
+          <div class="topic-card" style="border-style:dashed;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:110px;gap:6px"><div style="font-size:1.4rem;opacity:0.3">＋</div><div style="font-size:0.78rem;color:var(--text-muted)">Własny temat</div></div>
+        </div>
+        <div class="action-bar">
+          <button class="btn-secondary" onclick="setCreatorStep(2)">← Wróć</button>
+          <button class="btn-primary" onclick="setCreatorStep(4)">Generuj post →</button>
+          <button class="btn-ghost" onclick="setCreatorStep(4)">Pomiń, napiszę sam</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: TREŚĆ -->
+      <div class="step-panel" id="cp-4">
+        <div class="step-badge">✍️ Krok 4</div>
+        <h1>Treść posta</h1>
+        <p class="step-desc">AI przygotowało wersję roboczą. Edytuj do woli lub napisz od zera.</p>
+        <div class="post-editor">
+          <div class="editor-toolbar">
+            <button class="tb">B</button><button class="tb"><em>I</em></button><button class="tb">#️⃣</button><button class="tb">😊</button>
+            <div class="tb-sep"></div>
+            <button class="tb">Krótszy</button><button class="tb">Dłuższy</button><button class="tb">Formalny</button>
+            <div class="tb-ai">✦ Popraw z AI</div>
+          </div>
+          <textarea class="post-textarea" id="post-content" oninput="updateCharCount(this)">Zanim zaczniemy sesję, zawsze robię jedno: rozmawiam z tobą o tym, czego naprawdę szukasz. 📸
+
+Nie chodzi mi o ustawienie was w rządku i powiedzenie „ser!". Chcę żebyście czuli się jak na spacerze — bo właśnie wtedy wychodzą te zdjęcia, które trafiają na lodówkę i wiszą tam latami.
+
+Kulisy sesji rodzinnej to zawsze trochę chaosu, dużo śmiechu i kilka momentów, w których zapominacie, że w ogóle jest ktoś z aparatem.
+
+I właśnie o to chodzi. 💛
+
+Zarezerwuj swoją sesję na wiosnę — terminy marzec–maj znikają szybko!
+🔗 Link w bio</textarea>
+          <div class="post-foot">
+            <div class="char-c">Znaków: <span id="char-count">487</span> / 2200</div>
+            <div style="display:flex;gap:6px">
+              <button class="tb" style="font-size:0.72rem">Resetuj</button>
+              <button class="tb" style="font-size:0.72rem">Historia</button>
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:12px;font-size:0.78rem;color:var(--purple)">✦ Warianty zakończenia</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <div style="display:inline-flex;padding:7px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:100px;font-size:0.75rem;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor='var(--border-active)'" onmouseout="this.style.borderColor='var(--border)'">📩 „Napisz do mnie"</div>
+            <div style="display:inline-flex;padding:7px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:100px;font-size:0.75rem;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor='var(--border-active)'" onmouseout="this.style.borderColor='var(--border)'">📅 Wolne terminy: 15, 22, 29 marca</div>
+            <div style="display:inline-flex;padding:7px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:100px;font-size:0.75rem;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor='var(--border-active)'" onmouseout="this.style.borderColor='var(--border)'">❓ Jakie miejsce wybierzecie?</div>
+          </div>
+        </div>
+        <div class="action-bar">
+          <button class="btn-secondary" onclick="setCreatorStep(3)">← Wróć</button>
+          <button class="btn-primary" onclick="setCreatorStep(5)">Dalej: Grafika →</button>
+          <button class="btn-ghost">Zapisz szkic</button>
+        </div>
+      </div>
+
+      <!-- STEP 5: GRAFIKA -->
+      <div class="step-panel" id="cp-5">
+        <div class="step-badge">🖼 Krok 5</div>
+        <h1>Grafika</h1>
+        <p class="step-desc">Wygeneruj grafikę przez AI lub dodaj własne zdjęcie. Możesz połączyć oba.</p>
+        <div class="img-grid">
+          <div class="img-panel">
+            <div class="panel-head">✦ Generator AI <span class="pbadge">Automatyczne</span></div>
+            <textarea rows="2" style="font-size:0.82rem" placeholder="Opis grafiki...">Naturalna sesja rodzinna w plenerze, złota godzina, bokeh, lifestyle</textarea>
+            <button class="gen-btn">✦ Generuj grafikę</button>
+            <div class="img-preview"><div style="padding:20px"><div style="font-size:2rem;opacity:0.2;margin-bottom:6px">🖼</div><div>Kliknij „Generuj"</div></div></div>
+          </div>
+          <div class="img-panel">
+            <div class="panel-head">📁 Własne zdjęcie <span class="pbadge manual">Twoje ujęcie</span></div>
+            <div class="upload-zone"><div class="upload-icon">⬆</div><div class="upload-hint">Przeciągnij zdjęcie lub kliknij</div><div class="upload-fmt">JPG, PNG, WEBP · max 20 MB</div></div>
+            <div style="margin-top:14px">
+              <div class="field-label">Po wgraniu</div>
+              <div class="chip-group">
+                <div class="chip">Usuń tło</div>
+                <div class="chip selected">Kontrast</div>
+                <div class="chip">Logo</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="action-bar">
+          <button class="btn-secondary" onclick="setCreatorStep(4)">← Wróć</button>
+          <button class="btn-primary" onclick="setCreatorStep(6)">Dalej: Publikacja →</button>
+          <button class="btn-ghost">Pomiń grafikę</button>
+        </div>
+      </div>
+
+      <!-- STEP 6: PUBLIKACJA -->
+      <div class="step-panel" id="cp-6">
+        <div class="step-badge">🚀 Krok 6</div>
+        <h1>Publikacja</h1>
+        <p class="step-desc">Sprawdź podgląd, ustaw czas i opublikuj lub zaplanuj.</p>
+        <div class="card pub-layout">
+          <div class="phone-wrap">
+            <div class="phone-mock">
+              <div class="phone-screen">
+                <div class="ig-header"><div class="ig-av"></div><div><div class="ig-n">twoja_marka</div><div class="ig-s">Studio · Wrocław</div></div></div>
+                <div class="ig-img">📸</div>
+                <div class="ig-cap"><strong>twoja_marka</strong> Zanim zaczniemy sesję, zawsze robię jedno: rozmawiam z tobą o tym, czego naprawdę szukasz…<span style="color:#0095f6"> więcej</span></div>
+                <div class="ig-foot"><span>❤ 47</span><span>💬 8</span><span>📤</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="pub-opts">
+            <h3>Ustawienia</h3>
+            <div>
+              <div class="field-label">Kiedy?</div>
+              <div class="sched-toggle">
+                <button class="tgl active" onclick="togglePub(this)">Teraz</button>
+                <button class="tgl" onclick="togglePub(this)">Zaplanuj</button>
+              </div>
+            </div>
+            <div class="best-t">💡 AI: <strong>środa 19:30</strong> — najwyższy zasięg</div>
+            <div>
+              <div class="field-label">Platforma</div>
+              <div class="chip-group">
+                <div class="chip selected">📷 IG</div>
+                <div class="chip">💼 LI</div>
+                <div class="chip">👍 FB</div>
+              </div>
+            </div>
+            <div>
+              <div class="field-label">Hashtagi</div>
+              <div class="hashtag-list">
+                <div class="htag">#fotografiarodzinna</div>
+                <div class="htag">#sesjaplenerowa</div>
+                <div class="htag">#fotografwroclaw</div>
+                <div class="htag">#fotografialifestyle</div>
+                <div class="htag add">+ dodaj</div>
+              </div>
+            </div>
+            <button class="btn-primary" style="justify-content:center" onclick="publishPost()">🚀 Opublikuj teraz</button>
+            <button class="btn-secondary" style="justify-content:center" onclick="schedulePost()">📅 Zaplanuj na środę 19:30</button>
+          </div>
+        </div>
+        <div class="action-bar">
+          <button class="btn-secondary" onclick="setCreatorStep(5)">← Wróć</button>
+          <button class="btn-ghost" onclick="closeCreator()">Wróć do listy postów</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ TIME PICKER MODAL ══════════════════ -->
+<div class="modal-overlay" id="time-modal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h3>Planowanie publikacji</h3>
+    <p class="modal-sub" id="modal-date-info">Wybierz godzinę dla środa, 5 marca</p>
+    <div class="time-options" id="time-options">
+      <div class="time-opt selected" onclick="selectTime(this,'08:00')"><div class="t-label">08:00</div><div class="t-sub">🌅 Rano — dobry zasięg LI</div></div>
+      <div class="time-opt" onclick="selectTime(this,'12:00')"><div class="t-label">12:00</div><div class="t-sub">☀ Południe</div></div>
+      <div class="time-opt" onclick="selectTime(this,'17:00')"><div class="t-label">17:00</div><div class="t-sub">🏠 Popołudnie</div></div>
+      <div class="time-opt" onclick="selectTime(this,'19:30')"><div class="t-label">19:30</div><div class="t-sub">⭐ Wieczór — najlepszy IG</div></div>
+    </div>
+    <div class="modal-custom">
+      <label>Własna godzina:</label>
+      <input type="time" value="19:30" id="custom-time">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">Anuluj</button>
+      <button class="btn-primary" onclick="confirmSchedule()">📅 Zaplanuj post</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+const posts = [
+  { id:1, emoji:'📸', title:'Kulisy sesji rodzinnej — jak ją przygotować?', preview:'Zanim zaczniemy sesję, zawsze robię jedno: rozmawiam z tobą...', status:'published', platforms:['ig','li'], date:'2026-02-14', scheduledTime:'19:30', views:4820, likes:342, comments:67, shares:28 },
+  { id:2, emoji:'🌅', title:'Złota godzina — dlaczego warto ją wybrać?', preview:'Każdy fotograf ma swoją ulubioną porę dnia. Moja to bez wątpienia...', status:'published', platforms:['ig'], date:'2026-02-07', scheduledTime:'19:00', views:3210, likes:287, comments:41, shares:19 },
+  { id:3, emoji:'💬', title:'Historia klienta: rodzina Kowalskich', preview:'Marta napisała do mnie z lekką tremą. Nigdy wcześniej nie robiła...', status:'scheduled', platforms:['ig','fb'], date:'2026-03-05', scheduledTime:'19:30', views:null, likes:null, comments:null, shares:null },
+  { id:4, emoji:'🎁', title:'5 rzeczy, których nie wiedzieliście o sesjach plenerowych', preview:'Myślicie, że pogoda decyduje o sesji? Błąd! Zdradze wam...', status:'scheduled', platforms:['li'], date:'2026-03-12', scheduledTime:'08:00', views:null, likes:null, comments:null, shares:null },
+  { id:5, emoji:'📅', title:'Zarezerwuj sesję wielkanocną — terminy uciekają!', preview:'Marzec i kwiecień to moje ulubione miesiące na sesje plenerowe...', status:'draft', platforms:['ig','li','fb'], date:null, scheduledTime:null, views:null, likes:null, comments:null, shares:null },
+  { id:6, emoji:'🌸', title:'Wiosenne sesje — nowa galeria dostępna!', preview:'Właśnie wrzuciłam do galerii zdjęcia z ostatnich tygodni...', status:'draft', platforms:['ig'], date:null, scheduledTime:null, views:null, likes:null, comments:null, shares:null },
+];
+
+let sortAsc = false;
+let filterStatus = '';
+let filterPlatform = '';
+let searchQuery = '';
+let currentPage = 'posts';
+let calYear = 2026;
+let calMonth = 2; // 0-indexed, March
+let pendingSchedulePostId = null;
+let pendingScheduleDate = null;
+
+// ── NAVIGATION ──
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach((t,i) => {
+    t.classList.toggle('active', ['posts','calendar','stats'][i] === name);
+  });
+  document.querySelectorAll('#app-sidebar .step-item').forEach((s,i) => {
+    s.classList.toggle('active', ['posts','calendar','stats'][i] === name);
+    s.classList.remove('done','locked');
+  });
+  currentPage = name;
+  if (name === 'calendar') renderCalendar();
+  if (name === 'posts') renderPosts();
+  if (name === 'stats') renderTopPosts();
+}
+
+// ── CREATOR ──
+let creatorStep = 3;
+function openCreator() {
+  document.getElementById('creator-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setCreatorStep(3);
+}
+function openCreatorWithPost(i) {
+  document.getElementById('creator-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setCreatorStep(4);
+}
+function closeCreator() {
+  document.getElementById('creator-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function saveAsDraft() {
+  closeCreator();
+  showPage('posts');
+}
+function setCreatorStep(n) {
+  creatorStep = n;
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('cp-' + n);
+  if(panel) panel.classList.add('active');
+  // update top track
+  document.querySelectorAll('.cst').forEach((el, i) => {
+    const sn = i*2/2 + (i <= 2 ? 1 : Math.ceil(i/1));
+    // re-calc
+  });
+  // simplified track update
+  const allCst = document.querySelectorAll('.cst:not(.cst-arrow)');
+  allCst.forEach((el, i) => {
+    const s = i + 1;
+    el.classList.toggle('done', s < n);
+    el.classList.toggle('active', s === n);
+    el.classList.remove('locked');
+  });
+  // sidebar
+  for(let i=1;i<=6;i++){
+    const el = document.getElementById('cs-'+i);
+    if(!el) continue;
+    el.classList.remove('active','done','locked');
+    if(i < n) el.classList.add('done');
+    else if(i === n) el.classList.add('active');
+    else el.classList.add('locked');
+  }
+}
+
+function selectTopic(card) {
+  document.querySelectorAll('.topic-card:not([style*="dashed"])').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+}
+function updateCharCount(el) {
+  document.getElementById('char-count').textContent = el.value.length;
+}
+function togglePub(btn) {
+  btn.closest('.sched-toggle').querySelectorAll('.tgl').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function publishPost() {
+  const newPost = { id: posts.length+1, emoji:'📸', title:'Kulisy sesji rodzinnej — jak ją przygotować?', preview:'Zanim zaczniemy sesję, zawsze robię jedno...', status:'published', platforms:['ig'], date: new Date().toISOString().slice(0,10), scheduledTime:'19:30', views:0, likes:0, comments:0, shares:0 };
+  posts.unshift(newPost);
+  closeCreator();
+  showPage('posts');
+}
+function schedulePost() {
+  const newPost = { id: posts.length+1, emoji:'📸', title:'Kulisy sesji rodzinnej — nowy post', preview:'Zanim zaczniemy sesję...', status:'scheduled', platforms:['ig'], date:'2026-03-05', scheduledTime:'19:30', views:null, likes:null, comments:null, shares:null };
+  posts.unshift(newPost);
+  closeCreator();
+  showPage('calendar');
+}
+
+// ── POSTS RENDERING ──
+function getFilteredPosts() {
+  let list = [...posts];
+  if(filterStatus) list = list.filter(p => p.status === filterStatus);
+  if(filterPlatform) list = list.filter(p => p.platforms.includes(filterPlatform));
+  if(searchQuery) list = list.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()));
+  list.sort((a,b) => {
+    const da = a.date || '9999', db = b.date || '9999';
+    return sortAsc ? da.localeCompare(db) : db.localeCompare(da);
+  });
+  return list;
+}
+function filterPosts(q) { searchQuery = q; renderPosts(); }
+function filterByStatus(v) { filterStatus = v; renderPosts(); }
+function filterByPlatform(v) { filterPlatform = v; renderPosts(); }
+function toggleSort() {
+  sortAsc = !sortAsc;
+  document.getElementById('sort-indicator').textContent = sortAsc ? '↑' : '↓';
+  renderPosts();
+}
+
+const platformIcons = { ig: {emoji:'📷', class:'plat-dot-ig'}, li: {emoji:'💼', class:'plat-dot-li'}, fb: {emoji:'👍', class:'plat-dot-fb'} };
+const statusLabels = { draft:'Szkic', scheduled:'Zaplanowany', published:'Opublikowany' };
+const statusClass = { draft:'status-draft', scheduled:'status-scheduled', published:'status-published' };
+
+function renderPosts() {
+  const grid = document.getElementById('posts-grid');
+  const list = getFilteredPosts();
+  if(!list.length) { grid.innerHTML = '<div style="text-align:center;padding:48px;color:var(--text-dim);font-size:0.85rem">Brak postów spełniających kryteria</div>'; return; }
+  grid.innerHTML = list.map(p => `
+    <div class="post-row" draggable="true" data-id="${p.id}" ondragstart="onDragStart(event,${p.id})" onclick="openCreatorWithPost(${p.id-1})">
+      <div class="drag-handle" onclick="event.stopPropagation()">⠿</div>
+      <div class="post-thumb">${p.emoji}</div>
+      <div class="post-body">
+        <div class="post-title">${p.title}</div>
+        <div class="post-preview">${p.preview}</div>
+        <div class="post-meta-row">
+          <div class="post-platforms">${p.platforms.map(pl=>`<div class="post-plat-icon">${platformIcons[pl].emoji}</div>`).join('')}</div>
+          <span class="status ${statusClass[p.status]}"><span class="status-dot"></span>${statusLabels[p.status]}</span>
+          ${p.date ? `<span class="post-date">${p.status==='scheduled'?'📅 ':''}${formatDate(p.date)}${p.scheduledTime ? ' · '+p.scheduledTime:''}</span>` : '<span class="post-date">Niezaplanowany</span>'}
+        </div>
+      </div>
+      ${p.status==='published' ? `
+      <div class="post-stats-mini">
+        <div class="stat-mini">👁 <strong>${fmt(p.views)}</strong></div>
+        <div class="stat-mini">❤ <strong>${fmt(p.likes)}</strong></div>
+        <div class="stat-mini">💬 <strong>${fmt(p.comments)}</strong></div>
+      </div>` : ''}
+      <div class="post-actions" onclick="event.stopPropagation()">
+        <div class="icon-btn" title="Edytuj">✏</div>
+        <div class="icon-btn" title="Usuń">🗑</div>
+      </div>
+    </div>`).join('');
+}
+function fmt(n) { if(!n) return '0'; return n >= 1000 ? (n/1000).toFixed(1)+'k' : n; }
+function formatDate(d) {
+  if(!d) return '';
+  const months = ['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'];
+  const [y,m,day] = d.split('-');
+  return `${parseInt(day)} ${months[parseInt(m)-1]} ${y}`;
+}
+
+// ── CALENDAR ──
+function renderCalendar() {
+  const monthNames = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
+  document.getElementById('cal-title').textContent = `${monthNames[calMonth]} ${calYear}`;
+
+  const grid = document.getElementById('cal-grid');
+  const dayLabels = ['Pon','Wt','Śr','Czw','Pt','Sob','Ndz'];
+  let html = dayLabels.map(d => `<div class="cal-day-label">${d}</div>`).join('');
+
+  const first = new Date(calYear, calMonth, 1);
+  let startDay = first.getDay() - 1; // Mon=0
+  if(startDay < 0) startDay = 6;
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const daysInPrev = new Date(calYear, calMonth, 0).getDate();
+  const today = new Date();
+  const isToday = (y,m,d) => y===today.getFullYear() && m===today.getMonth() && d===today.getDate();
+
+  const cells = [];
+  for(let i=0;i<startDay;i++) cells.push({day:daysInPrev-startDay+i+1, month:calMonth-1, year:calYear, other:true});
+  for(let d=1;d<=daysInMonth;d++) cells.push({day:d, month:calMonth, year:calYear, other:false});
+  while(cells.length % 7 !== 0) { const last = cells.length - daysInMonth - startDay + 1; cells.push({day:last, month:calMonth+1, year:calYear, other:true}); }
+
+  cells.forEach(c => {
+    const dateStr = `${c.year}-${String(c.month+1).padStart(2,'0')}-${String(c.day).padStart(2,'0')}`;
+    const dayPosts = posts.filter(p => p.date === dateStr && (p.status==='scheduled'||p.status==='published'));
+    const isTd = !c.other && isToday(c.year, c.month, c.day);
+    html += `<div class="cal-cell${c.other?' other-month':''}${isTd?' today':''}"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="onDrop(event,'${dateStr}',this)">
+      <div class="cell-date">${c.day}</div>
+      <div class="cell-posts">
+        ${dayPosts.map(p=>`<div class="cell-post-chip ${p.status}"><span class="chip-time">${p.scheduledTime||''}</span><span class="chip-title">${p.title}</span></div>`).join('')}
+      </div>
+    </div>`;
+  });
+  grid.innerHTML = html;
+
+  // Draggable posts sidebar
+  const unscheduled = posts.filter(p => p.status === 'draft');
+  const dpContainer = document.getElementById('draggable-posts');
+  if(!unscheduled.length) { dpContainer.innerHTML = '<div style="font-size:0.8rem;color:var(--text-dim);text-align:center;padding:20px">Wszystkie posty mają datę</div>'; return; }
+  dpContainer.innerHTML = unscheduled.map(p=>`
+    <div class="draggable-post" draggable="true" data-id="${p.id}" ondragstart="onDragStart(event,${p.id})">
+      <div class="dp-thumb">${p.emoji}</div>
+      <div class="dp-info">
+        <div class="dp-title">${p.title}</div>
+        <div class="dp-sub">${p.platforms.map(pl=>platformIcons[pl].emoji).join(' ')} · Szkic</div>
+      </div>
+      <div class="dp-drag">⠿</div>
+    </div>`).join('');
+}
+
+function changeMonth(dir) {
+  calMonth += dir;
+  if(calMonth > 11) { calMonth=0; calYear++; }
+  if(calMonth < 0) { calMonth=11; calYear--; }
+  renderCalendar();
+}
+
+let draggedPostId = null;
+function onDragStart(e, id) { draggedPostId = id; e.dataTransfer.effectAllowed='move'; }
+function onDrop(e, dateStr, cell) {
+  e.preventDefault();
+  cell.classList.remove('drag-over');
+  if(!draggedPostId) return;
+  pendingSchedulePostId = draggedPostId;
+  pendingScheduleDate = dateStr;
+  showTimeModal(dateStr);
+  draggedPostId = null;
+}
+function showTimeModal(dateStr) {
+  const [y,m,d] = dateStr.split('-');
+  const months = ['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'];
+  document.getElementById('modal-date-info').textContent = `Wybierz godzinę dla ${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+  document.getElementById('time-modal').style.display = 'grid';
+}
+function closeModal() { document.getElementById('time-modal').style.display = 'none'; }
+function selectTime(el, time) {
+  document.querySelectorAll('.time-opt').forEach(t=>t.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('custom-time').value = time;
+}
+function confirmSchedule() {
+  const time = document.getElementById('custom-time').value;
+  const post = posts.find(p => p.id === pendingSchedulePostId);
+  if(post) {
+    post.date = pendingScheduleDate;
+    post.scheduledTime = time;
+    post.status = 'scheduled';
+  }
+  closeModal();
+  renderCalendar();
+  renderPosts();
+}
+
+// ── TOP POSTS ──
+function renderTopPosts() {
+  const published = posts.filter(p=>p.status==='published').sort((a,b)=>(b.views||0)-(a.views||0));
+  const list = document.getElementById('top-posts-list');
+  list.innerHTML = published.map((p,i)=>`
+    <div class="top-post-row">
+      <div class="tp-rank">${i+1}</div>
+      <div class="tp-thumb">${p.emoji}</div>
+      <div class="tp-body">
+        <div class="tp-title">${p.title}</div>
+        <div class="tp-date">${formatDate(p.date)} · ${p.platforms.map(pl=>platformIcons[pl].emoji).join(' ')}</div>
+      </div>
+      <div class="tp-metrics">
+        <div class="tp-metric"><div class="tp-m-val">${fmt(p.views)}</div><div class="tp-m-label">Wyświetl.</div></div>
+        <div class="tp-metric"><div class="tp-m-val">${fmt(p.likes)}</div><div class="tp-m-label">Polub.</div></div>
+        <div class="tp-metric"><div class="tp-m-val">${fmt(p.comments)}</div><div class="tp-m-label">Koment.</div></div>
+        <div class="tp-metric"><div class="tp-m-val">${fmt(p.shares)}</div><div class="tp-m-label">Udost.</div></div>
+      </div>
+    </div>`).join('');
+}
+
+// ── CHIP TOGGLE ──
+document.querySelectorAll('.chip').forEach(c => {
+  c.addEventListener('click', function() { this.classList.toggle('selected'); });
+});
+
+// ── INIT ──
+renderPosts();
+renderTopPosts();
+</script>
+</body>
+</html>

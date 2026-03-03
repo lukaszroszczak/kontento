@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run build:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(ln:*)",
+      "Bash(echo:*)",
+      "Bash(lsof:*)",
+      "Bash(npx next lint:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx next build:*)",
+      "Bash(npm run dev)"
+    ]
+  }
+}

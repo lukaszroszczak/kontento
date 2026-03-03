@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kontento — AI Content Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0c0c0f;
+    --surface: #13131a;
+    --surface2: #1a1a24;
+    --border: rgba(255,255,255,0.07);
+    --border-active: rgba(255,255,255,0.18);
+    --text: #f0eff5;
+    --text-muted: #7a7990;
+    --text-dim: #4a4860;
+    --accent: #c8f060;
+    --accent-dim: rgba(200,240,96,0.12);
+    --accent-glow: rgba(200,240,96,0.25);
+    --purple: #9b7fff;
+    --purple-dim: rgba(155,127,255,0.12);
+    --coral: #ff7f6b;
+    --step-done: #2a2e1f;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  /* Subtle background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 80% 10%, rgba(155,127,255,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 10% 80%, rgba(200,240,96,0.04) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 40px;
+    background: rgba(12,12,15,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent); }
+
+  .nav-meta {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .nav-meta .platform-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .platform-icon {
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+    display: grid; place-items: center;
+    font-size: 10px;
+  }
+
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--purple), var(--accent));
+    display: grid; place-items: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  /* ── LAYOUT ── */
+  .app-shell {
+    display: flex;
+    padding-top: 81px;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── SIDEBAR STEPS ── */
+  .sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    padding: 40px 24px;
+    position: sticky;
+    top: 81px;
+    height: calc(100vh - 81px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .sidebar-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    padding-left: 4px;
+  }
+
+  .step-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .step-item:hover { background: var(--surface); }
+
+  .step-item.active {
+    background: var(--accent-dim);
+    border: 1px solid rgba(200,240,96,0.2);
+  }
+
+  .step-item.done {
+    opacity: 0.6;
+  }
+
+  .step-item.done .step-num {
+    background: var(--step-done);
+    border-color: rgba(200,240,96,0.3);
+    color: var(--accent);
+  }
+
+  .step-item.locked { opacity: 0.3; pointer-events: none; }
+
+  .step-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display: grid; place-items: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+
+  .step-item.active .step-num {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0c0c0f;
+    font-weight: 700;
+  }
+
+  .step-info { flex: 1; }
+  .step-name {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .step-sub {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+
+  .step-check {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: grid; place-items: center;
+    font-size: 10px;
+    color: #0c0c0f;
+    font-weight: 700;
+  }
+
+  .sidebar-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 16px 0;
+  }
+
+  .sidebar-session {
+    margin-top: auto;
+    padding: 14px;
+    background: var(--surface);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .session-label { font-size: 0.7rem; color: var(--text-dim); margin-bottom: 6px; }
+  .session-title { font-size: 0.85rem; font-weight: 500; }
+  .session-date { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── MAIN CONTENT ── */
+  .main {
+    flex: 1;
+    padding: 48px 56px;
+    max-width: 960px;
+  }
+
+  .step-header {
+    margin-bottom: 40px;
+  }
+
+  .step-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(200,240,96,0.2);
+    border-radius: 100px;
+    padding: 4px 12px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--accent);
+    margin-bottom: 16px;
+    letter-spacing: 0.04em;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    margin-bottom: 12px;
+  }
+
+  .step-desc {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    max-width: 520px;
+    line-height: 1.6;
+  }
+
+  /* ── PROFILE STEP ── */
+  .profile-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    margin-bottom: 20px;
+  }
+
+  .field-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  textarea, input[type=text] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 300;
+    padding: 14px 16px;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+    line-height: 1.6;
+  }
+
+  textarea:focus, input[type=text]:focus {
+    border-color: var(--border-active);
+  }
+
+  textarea::placeholder, input::placeholder { color: var(--text-dim); }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .platform-select {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .platform-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .platform-chip.selected {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+  .platform-chip .p-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.5;
+  }
+  .platform-chip.selected .p-dot { opacity: 1; }
+
+  /* ── RESEARCH STEP ── */
+  .research-running {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    margin-bottom: 20px;
+  }
+
+  .research-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .research-task {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--surface2);
+    border-radius: 12px;
+    font-size: 0.85rem;
+    animation: slideIn 0.4s ease both;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .task-spinner {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .task-done-icon {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #0c0c0f;
+    font-size: 11px;
+    font-weight: 700;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+
+  .task-info { flex: 1; }
+  .task-name { font-weight: 400; }
+  .task-detail { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+  .research-results {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .result-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+  }
+
+  .result-tag {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .result-title {
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+
+  .result-text {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* ── TOPICS STEP ── */
+  .topics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .topic-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .topic-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--accent-dim), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .topic-card:hover::before { opacity: 1; }
+
+  .topic-card.selected {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .topic-card.selected::before { opacity: 1; }
+
+  .topic-emoji { font-size: 1.5rem; margin-bottom: 10px; }
+  .topic-title {
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 6px;
+    line-height: 1.3;
+    position: relative;
+  }
+  .topic-hint {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    position: relative;
+  }
+
+  .topic-check {
+    position: absolute;
+    top: 14px; right: 14px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #0c0c0f;
+    font-size: 11px;
+    display: grid; place-items: center;
+    font-weight: 700;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .topic-card.selected .topic-check { opacity: 1; }
+
+  /* ── POST STEP ── */
+  .post-editor {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .editor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .toolbar-btn {
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .toolbar-btn:hover { background: var(--surface); color: var(--text); }
+
+  .toolbar-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+
+  .toolbar-ai {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 100px;
+    background: var(--purple-dim);
+    border: 1px solid rgba(155,127,255,0.2);
+    color: var(--purple);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .toolbar-ai:hover { background: rgba(155,127,255,0.2); }
+
+  .post-textarea {
+    width: 100%;
+    min-height: 180px;
+    background: none;
+    border: none;
+    padding: 20px;
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+  .post-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .char-count { font-size: 0.75rem; color: var(--text-muted); }
+  .char-count span { color: var(--accent); font-weight: 500; }
+
+  .ai-suggestions {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .suggestions-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    font-size: 0.8rem;
+    color: var(--purple);
+  }
+
+  .suggestion-chip {
+    display: inline-flex;
+    padding: 8px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    margin: 4px;
+    transition: all 0.15s;
+  }
+  .suggestion-chip:hover { border-color: var(--border-active); background: var(--surface); }
+
+  /* ── IMAGE STEP ── */
+  .image-step {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  .ai-image-panel, .upload-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+  }
+
+  .panel-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-badge {
+    padding: 2px 8px;
+    border-radius: 100px;
+    background: var(--purple-dim);
+    color: var(--purple);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .panel-badge.manual {
+    background: rgba(255,127,107,0.12);
+    color: var(--coral);
+  }
+
+  .ai-image-prompt {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .generate-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--purple-dim);
+    border: 1px solid rgba(155,127,255,0.25);
+    border-radius: 10px;
+    color: var(--purple);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .generate-btn:hover { background: rgba(155,127,255,0.2); }
+
+  .ai-image-preview {
+    aspect-ratio: 1;
+    background: var(--surface2);
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    overflow: hidden;
+    position: relative;
+    margin-top: 12px;
+  }
+
+  .ai-image-preview img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+
+  .image-generated-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+    display: flex;
+    align-items: flex-end;
+    padding: 12px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .ai-image-preview:hover .image-generated-overlay { opacity: 1; }
+
+  .upload-zone {
+    aspect-ratio: 1;
+    border: 1.5px dashed var(--border);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .upload-zone:hover { border-color: var(--border-active); background: var(--surface2); }
+
+  .upload-icon { font-size: 2rem; opacity: 0.4; }
+  .upload-hint { font-size: 0.78rem; color: var(--text-muted); text-align: center; line-height: 1.4; }
+  .upload-formats { font-size: 0.68rem; color: var(--text-dim); margin-top: 4px; }
+
+  .selected-image-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(255,127,107,0.08);
+    border: 1px solid rgba(255,127,107,0.2);
+    border-radius: 10px;
+    font-size: 0.78rem;
+    color: var(--coral);
+    margin-top: 12px;
+  }
+
+  /* ── PUBLISH STEP ── */
+  .publish-preview {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 40px;
+    margin-bottom: 20px;
+  }
+
+  .phone-mockup {
+    background: #1c1c1e;
+    border-radius: 32px;
+    padding: 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+    position: relative;
+  }
+
+  .phone-screen {
+    background: #fff;
+    border-radius: 22px;
+    overflow: hidden;
+    color: #000;
+  }
+
+  .insta-post-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+  }
+
+  .insta-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+  }
+
+  .insta-name { font-size: 0.75rem; font-weight: 700; }
+  .insta-sub { font-size: 0.65rem; color: #888; }
+
+  .insta-image {
+    width: 100%;
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    font-size: 3rem;
+  }
+
+  .insta-caption {
+    padding: 10px 12px;
+    font-size: 0.7rem;
+    line-height: 1.5;
+    color: #333;
+  }
+
+  .insta-caption strong { font-weight: 700; color: #000; }
+
+  .insta-footer {
+    display: flex;
+    gap: 12px;
+    padding: 8px 12px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+    font-size: 0.65rem;
+    color: #888;
+  }
+
+  .publish-options {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .publish-options h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+
+  .schedule-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .toggle-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .toggle-btn.active {
+    background: var(--accent-dim);
+    border-color: rgba(200,240,96,0.3);
+    color: var(--accent);
+  }
+
+  .best-time {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    background: var(--surface2);
+    border-radius: 10px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+  .best-time strong { color: var(--accent); }
+
+  .hashtag-area {
+    margin-top: 8px;
+  }
+
+  .hashtag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .hashtag {
+    padding: 4px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.72rem;
+    color: var(--purple);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .hashtag:hover { border-color: var(--purple); }
+  .hashtag.remove::after { content: ' ×'; opacity: 0.6; }
+
+  /* ── ACTION BAR ── */
+  .action-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 24px 0 0;
+    border-top: 1px solid var(--border);
+    margin-top: 32px;
+  }
+
+  .btn-primary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    background: var(--accent);
+    color: #0c0c0f;
+    border: none;
+    border-radius: 100px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary:hover { background: #d4f56a; transform: translateY(-1px); }
+
+  .btn-secondary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: none;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--border-active); color: var(--text); }
+
+  .btn-ghost {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-ghost:hover { color: var(--text-muted); }
+
+  .action-bar-meta {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  /* ── TABS for panel switching ── */
+  .step-panel { display: none; }
+  .step-panel.active { display: block; }
+
+  /* ── animations ── */
+  .step-panel.active {
+    animation: fadeUp 0.35s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-active); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">konte<span>n</span>to</div>
+  <div class="nav-meta">
+    <div class="platform-badge">
+      <div class="platform-icon">📸</div>
+      Instagram · @twoja_marka
+    </div>
+    <div class="avatar">MK</div>
+  </div>
+</nav>
+
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-label">Sesja twórcza</div>
+
+    <div class="step-item done" onclick="setStep(1)">
+      <div class="step-num">1</div>
+      <div class="step-info">
+        <div class="step-name">Profil marki</div>
+        <div class="step-sub">Uzupełniony</div>
+      </div>
+      <div class="step-check">✓</div>
+    </div>
+
+    <div class="step-item done" onclick="setStep(2)">
+      <div class="step-num">2</div>
+      <div class="step-info">
+        <div class="step-name">Research AI</div>
+        <div class="step-sub">3 insighty znaleziono</div>
+      </div>
+      <div class="step-check">✓</div>
+    </div>
+
+    <div class="step-item active" onclick="setStep(3)" id="step-nav-3">
+      <div class="step-num">3</div>
+      <div class="step-info">
+        <div class="step-name">Tematy</div>
+        <div class="step-sub">Wybierz lub dodaj własny</div>
+      </div>
+    </div>
+
+    <div class="step-item locked" id="step-nav-4">
+      <div class="step-num">4</div>
+      <div class="step-info">
+        <div class="step-name">Treść posta</div>
+        <div class="step-sub">Napisz lub edytuj</div>
+      </div>
+    </div>
+
+    <div class="step-item locked" id="step-nav-5">
+      <div class="step-num">5</div>
+      <div class="step-info">
+        <div class="step-name">Grafika</div>
+        <div class="step-sub">AI lub własne zdjęcie</div>
+      </div>
+    </div>
+
+    <div class="step-item locked" id="step-nav-6">
+      <div class="step-num">6</div>
+      <div class="step-info">
+        <div class="step-name">Publikacja</div>
+        <div class="step-sub">Teraz lub zaplanuj</div>
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-session">
+      <div class="session-label">Bieżąca sesja</div>
+      <div class="session-title">Post #1 — Luty 2026</div>
+      <div class="session-date">Rozpoczęto dziś, 14:22</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- STEP 1: PROFIL -->
+    <div class="step-panel" id="panel-1">
+      <div class="step-header">
+        <div class="step-badge">✦ Krok 1</div>
+        <h1>Opisz swoją<br>markę</h1>
+        <p class="step-desc">Powiedz nam w kilku zdaniach, czym się zajmujesz. Na tej podstawie AI dobierze odpowiedni ton i tematy do twoich postów.</p>
+      </div>
+
+      <div class="profile-card">
+        <div class="field-label">Opis działalności</div>
+        <textarea rows="4" placeholder="np. Prowadzę studio fotograficzne specjalizujące się w sesjach rodzinnych i biznesowych. Moją misją jest utrwalanie autentycznych chwil w naturalny, nienachalny sposób..."></textarea>
+
+        <div class="field-row">
+          <div>
+            <div class="field-label" style="margin-top:20px">Branża</div>
+            <input type="text" placeholder="np. Fotografia, Usługi kreatywne">
+          </div>
+          <div>
+            <div class="field-label" style="margin-top:20px">Grupa docelowa</div>
+            <input type="text" placeholder="np. Rodziny, Przedsiębiorcy, 25–45 lat">
+          </div>
+        </div>
+
+        <div class="field-label" style="margin-top:24px">Platformy do publikacji</div>
+        <div class="platform-select">
+          <div class="platform-chip selected"><div class="p-dot"></div> Instagram</div>
+          <div class="platform-chip"><div class="p-dot"></div> LinkedIn</div>
+          <div class="platform-chip"><div class="p-dot"></div> Facebook</div>
+          <div class="platform-chip"><div class="p-dot"></div> TikTok</div>
+        </div>
+
+        <div class="field-label" style="margin-top:24px">Ton komunikacji</div>
+        <div class="platform-select">
+          <div class="platform-chip selected">Ciepły i osobisty</div>
+          <div class="platform-chip">Profesjonalny</div>
+          <div class="platform-chip">Ekspercki</div>
+          <div class="platform-chip">Nieformalny</div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn-primary" onclick="setStep(2)">Zapisz i uruchom research →</button>
+        <div class="action-bar-meta">Dane zapisywane lokalnie</div>
+      </div>
+    </div>
+
+    <!-- STEP 2: RESEARCH -->
+    <div class="step-panel" id="panel-2">
+      <div class="step-header">
+        <div class="step-badge">⚡ Krok 2</div>
+        <h1>AI analizuje<br>twój rynek</h1>
+        <p class="step-desc">Przeszukujemy trendy, konkurencję i najlepsze praktyki w twojej branży. Zajmie to chwilę.</p>
+      </div>
+
+      <div class="research-running">
+        <div class="research-progress">
+          <div class="research-task" style="animation-delay:0s">
+            <div class="task-done-icon">✓</div>
+            <div class="task-info">
+              <div class="task-name">Analiza profilu branży</div>
+              <div class="task-detail">Fotografia usługowa · Polska · 2025–2026</div>
+            </div>
+          </div>
+          <div class="research-task" style="animation-delay:0.1s">
+            <div class="task-done-icon">✓</div>
+            <div class="task-info">
+              <div class="task-name">Trendy na Instagramie w branży</div>
+              <div class="task-detail">Znaleziono 12 aktualnych formatów treści</div>
+            </div>
+          </div>
+          <div class="research-task" style="animation-delay:0.2s">
+            <div class="task-done-icon">✓</div>
+            <div class="task-info">
+              <div class="task-name">Analiza najlepszego czasu publikacji</div>
+              <div class="task-detail">Optymalne: wt–czw, godz. 19:00–21:00</div>
+            </div>
+          </div>
+          <div class="research-task" style="animation-delay:0.3s">
+            <div class="task-spinner"></div>
+            <div class="task-info">
+              <div class="task-name">Generowanie propozycji tematów…</div>
+              <div class="task-detail">Na podstawie zebranych danych</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="research-results">
+          <div class="result-card">
+            <div class="result-tag">📈 Trend</div>
+            <div class="result-title">Behind the scenes zyska 40% więcej zasięgu</div>
+            <div class="result-text">Posty pokazujące kulisy pracy fotografa generują o 40% wyższe zaangażowanie w Q1 2026.</div>
+          </div>
+          <div class="result-card">
+            <div class="result-tag">⏱ Timing</div>
+            <div class="result-title">Najlepszy czas: środy, 19:30–20:30</div>
+            <div class="result-text">Twoja grupa docelowa (rodziny 30–45 lat) jest najbardziej aktywna wieczorami w środku tygodnia.</div>
+          </div>
+          <div class="result-card">
+            <div class="result-tag">🏷 Hashtagi</div>
+            <div class="result-title">Niszowe hashtagi > popularne</div>
+            <div class="result-text">#fotografiarodzinna #sesjaportretowa #fotografwroclaw — mniejsza konkurencja, wyższy zasięg organiczny.</div>
+          </div>
+          <div class="result-card">
+            <div class="result-tag">💬 Ton</div>
+            <div class="result-title">Opowiadanie historii zwiększa zapis</div>
+            <div class="result-text">Posty z mini-narracją (historia klienta) mają 2× wyższy wskaźnik zapisu do obserwowania.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn-secondary" onclick="setStep(1)">← Wróć</button>
+        <button class="btn-primary" onclick="setStep(3)">Przejdź do tematów →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: TEMATY -->
+    <div class="step-panel active" id="panel-3">
+      <div class="step-header">
+        <div class="step-badge">🎯 Krok 3</div>
+        <h1>Wybierz temat<br>dla posta</h1>
+        <p class="step-desc">AI zaproponowało tematy dopasowane do twojej marki i aktualnych trendów. Wybierz jeden lub wpisz własny.</p>
+      </div>
+
+      <div class="topics-grid">
+        <div class="topic-card selected" onclick="toggleTopic(this)">
+          <div class="topic-check">✓</div>
+          <div class="topic-emoji">📸</div>
+          <div class="topic-title">Kulisy sesji rodzinnej — jak ją przygotować?</div>
+          <div class="topic-hint">Pokaż swój proces, buduj zaufanie przed rezerwacją</div>
+        </div>
+        <div class="topic-card" onclick="toggleTopic(this)">
+          <div class="topic-check">✓</div>
+          <div class="topic-emoji">🌅</div>
+          <div class="topic-title">Złota godzina — dlaczego warto ją wybrać?</div>
+          <div class="topic-hint">Edukacyjny post o jakości światła, idealny dla nowych klientów</div>
+        </div>
+        <div class="topic-card" onclick="toggleTopic(this)">
+          <div class="topic-check">✓</div>
+          <div class="topic-emoji">💬</div>
+          <div class="topic-title">Historia klienta: rodzina Kowalskich</div>
+          <div class="topic-hint">Social proof w formie mini-relacji z sesji</div>
+        </div>
+        <div class="topic-card" onclick="toggleTopic(this)">
+          <div class="topic-check">✓</div>
+          <div class="topic-emoji">🎁</div>
+          <div class="topic-title">5 rzeczy, których nie wiedzieliście o sesjach plenerowych</div>
+          <div class="topic-hint">Format listowy, wysoki potencjał udostępnień</div>
+        </div>
+        <div class="topic-card" onclick="toggleTopic(this)">
+          <div class="topic-check">✓</div>
+          <div class="topic-emoji">📅</div>
+          <div class="topic-title">Kiedy zarezerwować sesję wielkanocną?</div>
+          <div class="topic-hint">Sezonowe CTA, idealny timing — marzec 2026</div>
+        </div>
+        <div class="topic-card" style="border-style: dashed; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:130px; gap:8px;" onclick="">
+          <div style="font-size:1.4rem; opacity:0.4">＋</div>
+          <div style="font-size:0.8rem; color:var(--text-muted)">Dodaj własny temat</div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn-secondary" onclick="setStep(2)">← Wróć</button>
+        <button class="btn-primary" onclick="setStep(4)">Generuj post z tym tematem →</button>
+        <button class="btn-ghost" onclick="setStep(4)">Pomiń, napiszę sam</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: POST -->
+    <div class="step-panel" id="panel-4">
+      <div class="step-header">
+        <div class="step-badge">✍️ Krok 4</div>
+        <h1>Treść posta</h1>
+        <p class="step-desc">AI napisało wersję roboczą na podstawie wybranego tematu. Edytuj do woli lub napisz od zera.</p>
+      </div>
+
+      <div class="post-editor">
+        <div class="editor-toolbar">
+          <button class="toolbar-btn">B</button>
+          <button class="toolbar-btn"><em>I</em></button>
+          <button class="toolbar-btn">#️⃣</button>
+          <button class="toolbar-btn">😊</button>
+          <div class="toolbar-sep"></div>
+          <button class="toolbar-btn">Krótszy</button>
+          <button class="toolbar-btn">Dłuższy</button>
+          <button class="toolbar-btn">Bardziej formalny</button>
+          <div class="toolbar-ai" onclick="">
+            ✦ Popraw z AI
+          </div>
+        </div>
+        <textarea class="post-textarea">Zanim zaczniemy sesję, zawsze robię jedno: rozmawiam z tobą o tym, czego naprawdę szukasz. 📸
+
+Nie chodzi mi o ustawienie was w rządku i powiedzenie „ser!". Chcę żebyście czuli się jak na spacerze — bo właśnie wtedy wychodzą te zdjęcia, które trafiają na lodówkę i wiszą tam latami.
+
+Kulisy sesji rodzinnej to zawsze trochę chaosu, dużo śmiechu i kilka momentów, w których zapominacie, że w ogóle jest ktoś z aparatem.
+
+I właśnie o to chodzi. 💛
+
+Zarezerwuj swoją sesję na wiosnę — terminy marzec–maj znikają szybko!
+🔗 Link w bio</textarea>
+        <div class="post-meta">
+          <div class="char-count">Znaków: <span>487</span> / 2200</div>
+          <div style="display:flex;gap:8px;">
+            <button class="toolbar-btn" style="font-size:0.75rem">Resetuj do AI</button>
+            <button class="toolbar-btn" style="font-size:0.75rem">Historia wersji</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-suggestions">
+        <div class="suggestions-header">✦ Szybkie warianty zakończenia</div>
+        <div class="suggestion-chip">📩 „Napisz do mnie — wspólnie zaplanujemy tę chwilę"</div>
+        <div class="suggestion-chip">📅 „Wolne terminy: 15, 22, 29 marca"</div>
+        <div class="suggestion-chip">❓ „Jakie miejsce na sesję plenerową wybierzecie?"</div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn-secondary" onclick="setStep(3)">← Wróć</button>
+        <button class="btn-primary" onclick="setStep(5)">Zatwierdź i przejdź do grafiki →</button>
+        <button class="btn-ghost">Zapisz szkic</button>
+      </div>
+    </div>
+
+    <!-- STEP 5: GRAFIKA -->
+    <div class="step-panel" id="panel-5">
+      <div class="step-header">
+        <div class="step-badge">🖼 Krok 5</div>
+        <h1>Grafika do posta</h1>
+        <p class="step-desc">Wygeneruj grafikę przez AI lub dodaj własne zdjęcie z sesji. Możesz też połączyć oba podejścia.</p>
+      </div>
+
+      <div class="image-step">
+        <div class="ai-image-panel">
+          <div class="panel-title">
+            ✦ Generowanie AI
+            <span class="panel-badge">Automatyczne</span>
+          </div>
+          <div class="ai-image-prompt">
+            <textarea rows="2" style="font-size:0.82rem;" placeholder="Opis grafiki do wygenerowania (AI wypełni automatycznie)">Naturalna, ciepła sesja rodzinna w plenerze, złota godzina, bokeh, autentyczne emocje, styl lifestyle photography</textarea>
+            <button class="generate-btn">✦ Generuj grafikę</button>
+          </div>
+          <div class="ai-image-preview">
+            <div style="text-align:center; padding:20px;">
+              <div style="font-size:2rem;margin-bottom:8px;opacity:0.3">🖼</div>
+              <div style="color:var(--text-dim);font-size:0.78rem;">Kliknij „Generuj" aby<br>stworzyć grafikę</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="upload-panel">
+          <div class="panel-title">
+            📁 Własne zdjęcie
+            <span class="panel-badge manual">Twoje ujęcie</span>
+          </div>
+
+          <div class="upload-zone" onclick="">
+            <div class="upload-icon">⬆</div>
+            <div class="upload-hint">Przeciągnij zdjęcie lub kliknij,<br>aby wybrać z dysku</div>
+            <div class="upload-formats">JPG, PNG, WEBP · maks. 20 MB</div>
+          </div>
+
+          <div class="selected-image-indicator" style="display:none">
+            📷 DSC_0312.jpg · 4.2 MB · gotowe
+          </div>
+
+          <div style="margin-top:16px">
+            <div class="field-label">Opcje po wgraniu</div>
+            <div class="platform-select" style="margin-top:8px">
+              <div class="platform-chip">Usuń tło</div>
+              <div class="platform-chip selected">Dopasuj kontrast</div>
+              <div class="platform-chip">Dodaj logo</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn-secondary" onclick="setStep(4)">← Wróć</button>
+        <button class="btn-primary" onclick="setStep(6)">Dalej: podgląd i publikacja →</button>
+        <button class="btn-ghost">Pomiń grafikę</button>
+      </div>
+    </div>
+
+    <!-- STEP 6: PUBLIKACJA -->
+    <div class="step-panel" id="panel-6">
+      <div class="step-header">
+        <div class="step-badge">🚀 Krok 6</div>
+        <h1>Gotowe do<br>publikacji</h1>
+        <p class="step-desc">Sprawdź podgląd posta, ustaw czas i opublikuj. Twoja praca — jeden klik.</p>
+      </div>
+
+      <div class="publish-preview">
+        <!-- Phone mockup -->
+        <div style="display:flex;align-items:flex-start;justify-content:center">
+          <div class="phone-mockup" style="width:240px">
+            <div class="phone-screen">
+              <div class="insta-post-header">
+                <div class="insta-avatar"></div>
+                <div>
+                  <div class="insta-name">twoja_marka</div>
+                  <div class="insta-sub">Studio fotograficzne · Wrocław</div>
+                </div>
+              </div>
+              <div class="insta-image">📸</div>
+              <div class="insta-caption">
+                <strong>twoja_marka</strong> Zanim zaczniemy sesję, zawsze robię jedno: rozmawiam z tobą o tym, czego naprawdę szukasz. Nie chodzi mi o ustawienie was w rządku...
+                <div style="color:#0095f6;margin-top:4px;font-size:0.65rem">więcej</div>
+              </div>
+              <div class="insta-footer">
+                <span>❤ 47</span>
+                <span>💬 8</span>
+                <span>📤</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Publish options -->
+        <div class="publish-options">
+          <h3>Ustawienia publikacji</h3>
+
+          <div>
+            <div class="field-label">Kiedy opublikować?</div>
+            <div class="schedule-toggle">
+              <button class="toggle-btn active">Teraz</button>
+              <button class="toggle-btn">Zaplanuj</button>
+            </div>
+          </div>
+
+          <div class="best-time">
+            💡 AI rekomenduje: <strong>środa 19:30</strong> — najwyższy zasięg w tym tygodniu
+          </div>
+
+          <div>
+            <div class="field-label">Platforma</div>
+            <div class="platform-select">
+              <div class="platform-chip selected"><div class="p-dot"></div> Instagram</div>
+              <div class="platform-chip"><div class="p-dot"></div> Facebook</div>
+            </div>
+          </div>
+
+          <div class="hashtag-area">
+            <div class="field-label">Hashtagi (kliknij aby usunąć)</div>
+            <div class="hashtag-list">
+              <div class="hashtag remove">#fotografiarodzinna</div>
+              <div class="hashtag remove">#sesjaplenerowa</div>
+              <div class="hashtag remove">#fotografwroclaw</div>
+              <div class="hashtag remove">#sesjaportretowa</div>
+              <div class="hashtag remove">#fotografialifestyle</div>
+              <div class="hashtag" style="border-style:dashed;color:var(--text-dim)">+ dodaj</div>
+            </div>
+          </div>
+
+          <button class="btn-primary" style="width:100%;justify-content:center;padding:14px 28px;font-size:0.95rem;border-radius:14px;margin-top:8px">
+            🚀 Opublikuj teraz
+          </button>
+          <button class="btn-secondary" style="width:100%;justify-content:center;border-radius:14px">
+            📅 Zaplanuj na środę 19:30
+          </button>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn-secondary" onclick="setStep(5)">← Wróć do grafiki</button>
+        <div class="action-bar-meta">Post zostanie opublikowany na @twoja_marka</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  let currentStep = 3;
+
+  function setStep(n) {
+    // Deactivate all panels
+    document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.step-item').forEach(s => {
+      s.classList.remove('active');
+      if (!s.classList.contains('done')) s.classList.add('locked');
+    });
+
+    currentStep = n;
+
+    // Activate panel
+    const panel = document.getElementById('panel-' + n);
+    if (panel) panel.classList.add('active');
+
+    // Update sidebar steps
+    for (let i = 1; i <= 6; i++) {
+      const nav = document.getElementById('step-nav-' + i);
+      if (!nav) continue;
+      nav.classList.remove('locked', 'active', 'done');
+      if (i < n) {
+        nav.classList.add('done');
+        // Add check mark if not exists
+        if (!nav.querySelector('.step-check')) {
+          const check = document.createElement('div');
+          check.className = 'step-check';
+          check.textContent = '✓';
+          nav.appendChild(check);
+        }
+      } else if (i === n) {
+        nav.classList.add('active');
+        const check = nav.querySelector('.step-check');
+        if (check) check.remove();
+      } else {
+        nav.classList.add('locked');
+      }
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function toggleTopic(card) {
+    // Only allow one selected at a time
+    document.querySelectorAll('.topic-card:not([style*="dashed"])').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+  }
+
+  // Platform chips toggle
+  document.querySelectorAll('.platform-chip').forEach(chip => {
+    chip.addEventListener('click', function() {
+      this.classList.toggle('selected');
+    });
+  });
+
+  // Schedule toggle
+  document.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      this.closest('.schedule-toggle').querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
