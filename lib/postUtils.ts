@@ -3,7 +3,7 @@
  * Prisma/SQLite stores platform and hashtag arrays as JSON strings.
  */
 
-import type { Post, PostStats, Platform, PostStatus } from '@/types'
+import type { Post, PostStats, Platform, PostStatus, PostSource } from '@/types'
 
 function parseArr(json: string): string[] {
   try { return JSON.parse(json) } catch { return [] }
@@ -16,6 +16,7 @@ type PrismaPost = {
   content: string
   platforms: string
   status: string
+  source: string
   scheduledAt: Date | null
   publishedAt: Date | null
   imageUrl: string | null
@@ -47,6 +48,7 @@ export function toAppPost(p: PrismaPost): Post {
     imageUrl: p.imageUrl,
     hashtags: parseArr(p.hashtags),
     stats: p.stats ?? null,
+    source: (p.source || 'manual') as PostSource,
     deletedAt: p.deletedAt,
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,

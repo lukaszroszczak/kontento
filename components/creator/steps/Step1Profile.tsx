@@ -186,6 +186,17 @@ export function Step1Profile({ state, onChange, onNext }: Props) {
           onChange={(e) => onChange({ brand: { ...state.brand, website: e.target.value } })}
         />
 
+        <FieldLabel className="mt-5">{t('step1_image_style_label')}</FieldLabel>
+        <textarea
+          rows={4}
+          placeholder={t('step1_image_style_placeholder')}
+          value={state.brand.imagePromptTemplate ?? ''}
+          onChange={(e) => onChange({ brand: { ...state.brand, imagePromptTemplate: e.target.value || null } })}
+        />
+        <p className="text-[0.7rem] text-muted mt-1.5 leading-relaxed">
+          💡 {t('step1_image_style_hint')}
+        </p>
+
         <FieldLabel className="mt-6">{t('step1_platforms')}</FieldLabel>
         <div className="flex flex-wrap gap-2 mt-2">
           {PLATFORMS.map(({ id, label, color }) => (

@@ -18,9 +18,10 @@ export function TopNav({ onNewPost }: TopNavProps) {
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   const NAV_TABS = [
-    { href: '/posts',    label: t('nav_posts') },
-    { href: '/calendar', label: t('nav_calendar') },
-    { href: '/stats',    label: t('nav_stats') },
+    { href: '/posts',     label: t('nav_posts') },
+    { href: '/autopilot', label: t('nav_autopilot') },
+    { href: '/calendar',  label: t('nav_calendar') },
+    { href: '/stats',     label: t('nav_stats') },
   ]
 
   const initials = session?.user?.name
@@ -138,7 +139,7 @@ export function TopNav({ onNewPost }: TopNavProps) {
                   onClick={() => setShowUserMenu(false)}
                   className="flex items-center gap-2 px-3 py-2 rounded-[9px] text-[0.8rem] text-muted hover:text-ink hover:bg-surface2 transition-all"
                 >
-                  👤 Moje konto
+                  👤 {t('nav_my_account')}
                 </Link>
 
                 {session?.user?.role === 'admin' && (
@@ -147,7 +148,7 @@ export function TopNav({ onNewPost }: TopNavProps) {
                     onClick={() => setShowUserMenu(false)}
                     className="flex items-center gap-2 px-3 py-2 rounded-[9px] text-[0.8rem] text-muted hover:text-ink hover:bg-surface2 transition-all"
                   >
-                    🔧 Panel admin
+                    🔧 {t('nav_admin_panel')}
                   </Link>
                 )}
 
@@ -157,7 +158,7 @@ export function TopNav({ onNewPost }: TopNavProps) {
                   onClick={() => { setShowUserMenu(false); signOut({ callbackUrl: '/login' }) }}
                   className="w-full flex items-center gap-2 px-3 py-2 rounded-[9px] text-[0.8rem] text-muted hover:text-coral hover:bg-surface2 transition-all cursor-pointer text-left"
                 >
-                  ↩ Wyloguj się
+                  ↩ {t('nav_logout')}
                 </button>
               </div>
             </>

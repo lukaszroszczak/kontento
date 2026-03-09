@@ -19,6 +19,7 @@ model User {
   sessions      Session[]
   posts         Post[]
   brand         Brand?
+  autopilotConfig AutopilotConfig?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -46,6 +47,7 @@ model Post {
   content     String
   platforms   String     @default("[]") // JSON array: ["instagram","linkedin","facebook"]
   status      String     @default("DRAFT") // "DRAFT" | "SCHEDULED" | "PUBLISHED"
+  source      String     @default("manual") // "manual" | "autopilot"
   scheduledAt DateTime?
   publishedAt DateTime?
   imageUrl    String?
@@ -92,6 +94,22 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AutopilotConfig {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postsPerBatch   Int       @default(3)
+  tone            String    @default("Friendly")
+  language        String    @default("Polish")
+  includeHashtags Boolean   @default(true)
+  includeEmoji    Boolean   @default(true)
+  generateImages  Boolean   @default(true)
+  platforms       String    @default("[\"instagram\"]") // JSON array
+  lastRunAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 model VerificationToken {

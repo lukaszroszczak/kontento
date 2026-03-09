@@ -34,6 +34,7 @@ export async function POST(req: Request) {
     scheduledAt,
     imageUrl,
     hashtags = [],
+    source = 'manual',
   } = body
 
   if (!content?.trim()) {
@@ -53,6 +54,7 @@ export async function POST(req: Request) {
       publishedAt: derivedStatus === 'PUBLISHED' ? new Date() : null,
       imageUrl: imageUrl ?? null,
       hashtags: JSON.stringify(hashtags),
+      source: source === 'autopilot' ? 'autopilot' : 'manual',
     },
     include: { stats: true },
   })

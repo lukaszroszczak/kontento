@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import type { Post, Platform } from '@/types'
 import { STATUS_LABELS } from '@/types'
+import { useTranslation } from '@/lib/i18n'
 
 const PLATFORM_ICONS: Record<Platform, string> = {
   instagram: '📸',
@@ -17,9 +18,11 @@ interface PostRowProps {
   post: Post
   index?: number
   onDelete?: (id: string) => void
+  onPostClick?: (post: Post) => void
 }
 
-export function PostRow({ post, index = 0, onDelete }: PostRowProps) {
+export function PostRow({ post, index = 0, onDelete, onPostClick }: PostRowProps) {
+  const { t } = useTranslation()
   const thumbEmoji = post.imageUrl ? null : '📝'
 
   const displayDate =
@@ -31,7 +34,7 @@ export function PostRow({ post, index = 0, onDelete }: PostRowProps) {
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (onDelete && confirm('Usunąć ten post?')) onDelete(post.id)
+    if (onDelete && confirm(t('posts_confirm_delete'))) onDelete(post.id)
   }
 
   return (
@@ -42,6 +45,7 @@ export function PostRow({ post, index = 0, onDelete }: PostRowProps) {
         'hover:border-border-mid hover:bg-surface2 animate-fade-up',
       )}
       style={{ animationDelay: `${index * 40}ms` }}
+      onClick={() => onPostClick?.(post)}
     >
       <span className="text-dim cursor-grab text-base p-1 hidden sm:block">⠿</span>
 
@@ -82,6 +86,13 @@ export function PostRow({ post, index = 0, onDelete }: PostRowProps) {
           <StatMini label="💬" value={post.stats.comments} />
           <StatMini label="👁" value={post.stats.reach} />
         </div>
+      )}
+
+      {/* Source badge (autopilot only) */}
+      {post.source === 'autopilot' && (
+        <Badge variant="accent" className="flex-shrink-0 hidden sm:inline-flex">
+          ✦ Autopilot
+        </Badge>
       )}
 
       {/* Status badge */}

@@ -75,7 +75,9 @@ export function normaliseBrand(b: Partial<Brand>): Partial<Brand> {
     industry:    b.industry    ?? null,
     audience:    b.audience    ?? null,
     platforms:   Array.isArray(b.platforms) ? (b.platforms as Platform[]) : [],
-    tone:        b.tone        ?? null,
-    website:     b.website     ?? null,
+    tone:                b.tone                ?? null,
+    website:             b.website             ?? null,
+    logoBase64:          b.logoBase64          ?? null,
+    imagePromptTemplate: b.imagePromptTemplate ?? null,
   }
 }

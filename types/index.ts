@@ -1,4 +1,5 @@
 export type PostStatus = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED'
+export type PostSource = 'manual' | 'autopilot'
 
 export type Platform = 'instagram' | 'linkedin' | 'facebook' | 'tiktok'
 
@@ -14,6 +15,7 @@ export interface Post {
   imageUrl: string | null
   hashtags: string[]
   stats?: PostStats | null
+  source: PostSource
   deletedAt: Date | null
   createdAt: Date
   updatedAt: Date
@@ -39,6 +41,8 @@ export interface Brand {
   platforms: Platform[]
   tone: string | null
   website: string | null
+  logoBase64: string | null
+  imagePromptTemplate: string | null
 }
 
 // Creator wizard state
@@ -79,6 +83,29 @@ export const STATUS_LABELS: Record<PostStatus, string> = {
   PUBLISHED: 'Opublikowany',
 }
 
+export interface AutopilotConfig {
+  id: string
+  userId: string
+  postsPerBatch: number
+  tone: string
+  language: string
+  includeHashtags: boolean
+  includeEmoji: boolean
+  generateImages: boolean
+  platforms: Platform[]
+  lastRunAt: Date | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface AutopilotRunResult {
+  total: number
+  succeeded: number
+  failed: number
+  posts: Post[]
+  errors: { index: number; step: string; message: string }[]
+}
+
 // Mock posts for initial development (no DB yet)
 export const MOCK_POSTS: Post[] = [
   {
@@ -93,6 +120,7 @@ export const MOCK_POSTS: Post[] = [
     imageUrl: null,
     hashtags: ['#fotografiarodzinna', '#sesjaplenerowa', '#fotografwroclaw'],
     stats: { id: 's1', postId: '1', likes: 847, comments: 32, reach: 4200, saves: 156, clicks: 89 },
+    source: 'manual',
     deletedAt: null,
     createdAt: new Date('2026-02-14T10:00:00'),
     updatedAt: new Date('2026-02-15T19:30:00'),
@@ -109,6 +137,7 @@ export const MOCK_POSTS: Post[] = [
     imageUrl: null,
     hashtags: ['#fotografialifestyle', '#goldenhour'],
     stats: null,
+    source: 'manual',
     deletedAt: null,
     createdAt: new Date('2026-02-20T14:00:00'),
     updatedAt: new Date('2026-02-20T14:00:00'),
@@ -125,6 +154,7 @@ export const MOCK_POSTS: Post[] = [
     imageUrl: null,
     hashtags: ['#fotografiarodzinna', '#sesjaportretowa'],
     stats: { id: 's3', postId: '3', likes: 1243, comments: 67, reach: 8900, saves: 312, clicks: 145 },
+    source: 'manual',
     deletedAt: null,
     createdAt: new Date('2026-02-09T11:00:00'),
     updatedAt: new Date('2026-02-10T20:00:00'),
@@ -141,6 +171,7 @@ export const MOCK_POSTS: Post[] = [
     imageUrl: null,
     hashtags: [],
     stats: null,
+    source: 'manual',
     deletedAt: null,
     createdAt: new Date('2026-02-25T09:00:00'),
     updatedAt: new Date('2026-02-25T09:00:00'),
@@ -157,6 +188,7 @@ export const MOCK_POSTS: Post[] = [
     imageUrl: null,
     hashtags: ['#wielkanoc2026', '#wiosennaakcja'],
     stats: null,
+    source: 'manual',
     deletedAt: null,
     createdAt: new Date('2026-02-26T16:00:00'),
     updatedAt: new Date('2026-02-26T16:00:00'),
@@ -173,6 +205,7 @@ export const MOCK_POSTS: Post[] = [
     imageUrl: null,
     hashtags: ['#fotografiabts', '#sprzet'],
     stats: { id: 's6', postId: '6', likes: 562, comments: 28, reach: 3100, saves: 203, clicks: 61 },
+    source: 'manual',
     deletedAt: null,
     createdAt: new Date('2026-02-04T12:00:00'),
     updatedAt: new Date('2026-02-05T18:00:00'),

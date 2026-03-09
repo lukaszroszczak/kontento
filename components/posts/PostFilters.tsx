@@ -1,15 +1,18 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import type { PostStatus, Platform } from '@/types'
+import type { PostStatus, Platform, PostSource } from '@/types'
+import { useTranslation } from '@/lib/i18n'
 
 interface PostFiltersProps {
   filterStatus: PostStatus | 'ALL'
   filterPlatform: Platform | 'ALL'
+  filterSource: PostSource | 'ALL'
   searchQuery: string
   sortAsc: boolean
   onFilterStatus: (v: PostStatus | 'ALL') => void
   onFilterPlatform: (v: Platform | 'ALL') => void
+  onFilterSource: (v: PostSource | 'ALL') => void
   onSearch: (v: string) => void
   onToggleSort: () => void
 }
@@ -23,13 +26,17 @@ const selectBase = cn(
 export function PostFilters({
   filterStatus,
   filterPlatform,
+  filterSource,
   searchQuery,
   sortAsc,
   onFilterStatus,
   onFilterPlatform,
+  onFilterSource,
   onSearch,
   onToggleSort,
 }: PostFiltersProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="flex items-center gap-2 flex-wrap">
       {/* Status */}
@@ -38,10 +45,10 @@ export function PostFilters({
         onChange={(e) => onFilterStatus(e.target.value as PostStatus | 'ALL')}
         className={selectBase}
       >
-        <option value="ALL">Wszystkie statusy</option>
-        <option value="DRAFT">Szkice</option>
-        <option value="SCHEDULED">Zaplanowane</option>
-        <option value="PUBLISHED">Opublikowane</option>
+        <option value="ALL">{t('posts_filter_all_statuses')}</option>
+        <option value="DRAFT">{t('posts_filter_draft')}</option>
+        <option value="SCHEDULED">{t('posts_filter_scheduled')}</option>
+        <option value="PUBLISHED">{t('posts_filter_published')}</option>
       </select>
 
       {/* Platform */}
@@ -50,11 +57,22 @@ export function PostFilters({
         onChange={(e) => onFilterPlatform(e.target.value as Platform | 'ALL')}
         className={selectBase}
       >
-        <option value="ALL">Wszystkie platformy</option>
+        <option value="ALL">{t('posts_filter_all_platforms')}</option>
         <option value="instagram">Instagram</option>
         <option value="linkedin">LinkedIn</option>
         <option value="facebook">Facebook</option>
         <option value="tiktok">TikTok</option>
+      </select>
+
+      {/* Source */}
+      <select
+        value={filterSource}
+        onChange={(e) => onFilterSource(e.target.value as PostSource | 'ALL')}
+        className={selectBase}
+      >
+        <option value="ALL">{t('posts_filter_all_sources')}</option>
+        <option value="manual">{t('posts_filter_source_manual')}</option>
+        <option value="autopilot">{t('posts_filter_source_autopilot')}</option>
       </select>
 
       {/* Search */}
@@ -64,7 +82,7 @@ export function PostFilters({
         </span>
         <input
           type="text"
-          placeholder="Szukaj postów…"
+          placeholder={t('posts_search_placeholder')}
           value={searchQuery}
           onChange={(e) => onSearch(e.target.value)}
           className={cn(selectBase, 'pl-8 w-[180px]')}
@@ -80,7 +98,7 @@ export function PostFilters({
           'hover:border-border-active hover:text-ink transition-all duration-150',
         )}
       >
-        {sortAsc ? '↑' : '↓'} Data
+        {sortAsc ? '↑' : '↓'} {t('posts_sort_date')}
       </button>
     </div>
   )

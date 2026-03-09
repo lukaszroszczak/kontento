@@ -89,10 +89,10 @@ export function Step4Content({ state, onChange, onNext, onBack }: Props) {
       if (data.content) {
         update(data.content)
       } else {
-        setError(data.error || 'Nie udało się przepisać treści.')
+        setError(data.error || t('step4_error_rephrase'))
       }
     } catch {
-      setError('Błąd połączenia podczas przepisywania.')
+      setError(t('step4_error_rephrase_connection'))
     } finally {
       setRephrasing(false)
     }
@@ -127,10 +127,10 @@ export function Step4Content({ state, onChange, onNext, onBack }: Props) {
         setAiContent(data.content)
         update(data.content)
       } else {
-        setError(data.error || 'Nie udało się wygenerować treści.')
+        setError(data.error || t('error_api'))
       }
     } catch {
-      setError('Błąd połączenia. Sprawdź klucz API w .env.local.')
+      setError(t('step4_error_connection'))
     } finally {
       setGenerating(false)
     }
@@ -187,13 +187,13 @@ export function Step4Content({ state, onChange, onNext, onBack }: Props) {
 
   return (
     <div>
-      <StepBadge>✍️ Krok 4</StepBadge>
+      <StepBadge>✍️ {t('step4_label')}</StepBadge>
       <h1 className="font-syne text-[clamp(1.6rem,3vw,2.2rem)] font-[700] tracking-[-0.03em] leading-[1.15] mb-2.5">
         {t('step4_heading')}
       </h1>
       <p className="text-[0.9rem] text-muted max-w-[520px] leading-relaxed mb-6">
         {state.topic
-          ? `Temat: „${state.topic}". ${t('step4_subheading_topic')}`
+          ? `${t('step4_topic_prefix')}${state.topic}". ${t('step4_subheading_topic')}`
           : t('step4_subheading_manual')}
       </p>
 
@@ -302,22 +302,22 @@ export function Step4Content({ state, onChange, onNext, onBack }: Props) {
         {/* Toolbar */}
         <div className="flex items-center gap-1 px-4 py-2.5 border-b border-border flex-wrap">
           <button
-            title="Pogrubienie zaznaczonego tekstu"
+            title={t('step4_toolbar_bold')}
             onClick={() => wrapSelection('**')}
             className="px-2.5 py-1 text-[0.8rem] font-[700] text-muted bg-surface2 border border-border rounded-[6px] hover:border-border-active hover:text-ink transition-all cursor-pointer"
           >B</button>
           <button
-            title="Kursywa zaznaczonego tekstu"
+            title={t('step4_toolbar_italic')}
             onClick={() => wrapSelection('_')}
             className="px-2.5 py-1 text-[0.8rem] italic text-muted bg-surface2 border border-border rounded-[6px] hover:border-border-active hover:text-ink transition-all cursor-pointer"
           >I</button>
           <button
-            title="Wstaw hashtag"
+            title={t('step4_toolbar_hashtag')}
             onClick={() => insertAtCursor('#')}
             className="px-2.5 py-1 text-[0.8rem] text-muted bg-surface2 border border-border rounded-[6px] hover:border-border-active hover:text-ink transition-all cursor-pointer"
           >#️⃣</button>
           <button
-            title="Wstaw emoji"
+            title={t('step4_toolbar_emoji')}
             onClick={() => insertAtCursor('✨ ')}
             className="px-2.5 py-1 text-[0.8rem] text-muted bg-surface2 border border-border rounded-[6px] hover:border-border-active hover:text-ink transition-all cursor-pointer"
           >😊</button>
@@ -344,7 +344,7 @@ export function Step4Content({ state, onChange, onNext, onBack }: Props) {
             <div className="absolute inset-0 flex items-center justify-center bg-bg/70 backdrop-blur-sm z-10 rounded-none">
               <div className="flex flex-col items-center gap-2">
                 <span className="w-6 h-6 rounded-full border-2 border-t-transparent border-accent animate-spin" />
-                <span className="text-[0.78rem] text-muted">{rephrasing ? 'AI przepisuje…' : 'AI pisze…'}</span>
+                <span className="text-[0.78rem] text-muted">{rephrasing ? t('step4_ai_rephrasing') : t('step4_ai_writing')}</span>
               </div>
             </div>
           )}
@@ -353,7 +353,7 @@ export function Step4Content({ state, onChange, onNext, onBack }: Props) {
             className="w-full min-h-[180px] bg-transparent border-0 p-5 text-[0.9rem] leading-[1.7] outline-none resize-none !rounded-none"
             value={content}
             onChange={(e) => update(e.target.value)}
-            placeholder={generating ? '' : 'Wpisz treść posta lub wygeneruj z AI…'}
+            placeholder={generating ? '' : t('step4_placeholder')}
           />
         </div>
 
@@ -397,7 +397,7 @@ export function Step4Content({ state, onChange, onNext, onBack }: Props) {
                       'text-[0.78rem] cursor-pointer hover:border-border-active hover:bg-surface transition-all',
                     )}
                   >
-                    {s.emoji} „{s.text}"
+                    {s.emoji} &bdquo;{s.text}&ldquo;
                   </button>
                 ))}
           </div>
